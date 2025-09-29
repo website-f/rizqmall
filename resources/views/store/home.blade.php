@@ -12,36 +12,36 @@
               <div class="d-flex justify-content-between"><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2 bg-warning-subtle" data-bs-theme="light"><span class="fs-4 uil uil-star text-warning"></span></div>
                   <p class="nav-label">Deals</p>
-                </a><a class="icon-nav-item" href="#!">
+                </a><a class="icon-nav-item " href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-shopping-bag"></span></div>
-                  <p class="nav-label">Grocery</p>
-                </a><a class="icon-nav-item" href="#!">
+                  <p class="nav-label">Marketplace</p>
+                </a><a class="icon-nav-item d-flex flex-column align-items-center justify-content-center" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-watch-alt"></span></div>
-                  <p class="nav-label">Fashion</p>
+                  <p class="nav-label">Accomodation <br>Booking & Rent</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-mobile-android"></span></div>
-                  <p class="nav-label">Mobile</p>
+                  <p class="nav-label">Services</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-monitor"></span></div>
-                  <p class="nav-label">Electronics</p>
+                  <p class="nav-label">Pharmacy</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-estate"></span></div>
-                  <p class="nav-label">Home</p>
+                  <p class="nav-label">Premises</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-lamp"></span></div>
-                  <p class="nav-label">Dining</p>
+                  <p class="nav-label">Contractors</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-gift"></span></div>
-                  <p class="nav-label">Gifts</p>
+                  <p class="nav-label">Food & Catering</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-wrench"></span></div>
-                  <p class="nav-label">Tools</p>
+                  <p class="nav-label">Hardware</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-plane-departure"></span></div>
-                  <p class="nav-label">Travel</p>
+                  <p class="nav-label">Delivery</p>
                 </a><a class="icon-nav-item" href="#!">
                   <div class="icon-container mb-2" data-bs-theme="undefined"><span class="fs-4 uil uil-palette"></span></div>
-                  <p class="nav-label">Others</p>
+                  <p class="nav-label">Taxi & Rent</p>
                 </a>
               </div>
             </div>
@@ -104,52 +104,78 @@
                     <div class="swiper-theme-container products-slider">
                         <div class="swiper swiper theme-slider" data-swiper='{"slidesPerView":1,"spaceBetween":16,"breakpoints":{"450":{"slidesPerView":2,"spaceBetween":16},"768":{"slidesPerView":3,"spaceBetween":20},"1200":{"slidesPerView":4,"spaceBetween":16},"1540":{"slidesPerView":5,"spaceBetween":16}}}'>
                             <div class="swiper-wrapper">
-                                {{-- Loop through fetched Products --}}
                                 @forelse($products as $product)
-                                <div class="swiper-slide">
-                                    <div class="position-relative text-decoration-none product-card h-100">
-                                        <div class="d-flex flex-column justify-content-between h-100">
-                                            <div>
-                                                <div class="border border-1 border-translucent rounded-3 position-relative mb-3">
-                                                    <button class="btn btn-wish btn-wish-primary z-2 d-toggle-container" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist">
-                                                        <span class="fas fa-heart d-block-hover" data-fa-transform="down-1"></span>
-                                                        <span class="far fa-heart d-none-hover" data-fa-transform="down-1"></span>
-                                                    </button>
-                                                    {{-- Placeholder Image --}}
-                                                    <img class="img-fluid" src="https://placehold.co/300x300/4F46E5/FFFFFF?text={{ substr($product->name, 0, 1) }}" alt="{{ $product->name }}" />
+                                    <div class="swiper-slide">
+                                        <div class="position-relative text-decoration-none product-card h-100">
+                                            <div class="d-flex flex-column justify-content-between h-100">
+                                                <div>
+                                                    <div class="border border-1 border-translucent rounded-3 position-relative mb-3">
+                                                        <button class="btn btn-wish btn-wish-primary z-2 d-toggle-container" 
+                                                                data-bs-toggle="tooltip" 
+                                                                data-bs-placement="top" 
+                                                                title="Add to wishlist">
+                                                            <span class="fas fa-heart d-block-hover" data-fa-transform="down-1"></span>
+                                                            <span class="far fa-heart d-none-hover" data-fa-transform="down-1"></span>
+                                                        </button>
+                                
+                                                        {{-- ✅ Show product image if exists, otherwise fallback to placeholder --}}
+                                                        @if($product->images->isNotEmpty())
+                                                            <img class="img-fluid" 
+                                                                 src="{{ asset('storage/' . $product->images->first()->path) }}" 
+                                                                 alt="{{ $product->name }}" />
+                                                        @else
+                                                            <img class="img-fluid" 
+                                                                 src="https://placehold.co/300x300/4F46E5/FFFFFF?text={{ substr($product->name, 0, 1) }}" 
+                                                                 alt="{{ $product->name }}" />
+                                                        @endif
+                                                    </div>
+                                
+                                                    {{-- Placeholder link to product detail page --}}
+                                                    <a class="stretched-link" href="#">
+                                                        <h6 class="mb-2 lh-sm line-clamp-3 product-name">{{ $product->name }}</h6>
+                                                    </a>
+                                
+                                                    <p class="fs-9">
+                                                        <span class="fa fa-star text-warning"></span>
+                                                        <span class="fa fa-star text-warning"></span>
+                                                        <span class="fa fa-star text-warning"></span>
+                                                        <span class="fa-regular fa-star text-warning-light"></span>
+                                                        <span class="fa-regular fa-star text-warning-light"></span>
+                                                        <span class="text-body-quaternary fw-semibold ms-1">
+                                                            ({{ rand(5, 500) }} rated)
+                                                        </span>
+                                                    </p>
                                                 </div>
-                                                {{-- Placeholder link to product detail page --}}
-                                                <a class="stretched-link" href="#">
-                                                    <h6 class="mb-2 lh-sm line-clamp-3 product-name">{{ $product->name }}</h6>
-                                                </a>
-                                                <p class="fs-9">
-                                                    {{-- Static placeholder rating --}}
-                                                    <span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa-regular fa-star text-warning-light"></span><span class="fa-regular fa-star text-warning-light"></span>
-                                                    <span class="text-body-quaternary fw-semibold ms-1">({{ rand(5, 500) }} rated)</span>
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p class="fs-9 text-body-highlight fw-bold mb-2">
-                                                    @if($product->sale_price) On Sale! @else New Arrival @endif
-                                                </p>
-                                                <div class="d-flex align-items-center mb-1">
-                                                    @if($product->sale_price)
-                                                        <p class="me-2 text-body text-decoration-line-through mb-0">${{ number_format($product->regular_price, 2) }}</p>
-                                                        <h3 class="text-body-emphasis mb-0">RM{{ number_format($product->sale_price, 2) }}</h3>
-                                                    @else
-                                                        <h3 class="text-body-emphasis mb-0">RM{{ number_format($product->regular_price, 2) }}</h3>
-                                                    @endif
+                                
+                                                <div>
+                                                    <p class="fs-9 text-body-highlight fw-bold mb-2">
+                                                        @if($product->sale_price) On Sale! @else New Arrival @endif
+                                                    </p>
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        @if($product->sale_price)
+                                                            <p class="me-2 text-body text-decoration-line-through mb-0">
+                                                                RM{{ number_format($product->regular_price, 2) }}
+                                                            </p>
+                                                            <h3 class="text-body-emphasis mb-0">
+                                                                RM{{ number_format($product->sale_price, 2) }}
+                                                            </h3>
+                                                        @else
+                                                            <h3 class="text-body-emphasis mb-0">
+                                                                RM{{ number_format($product->regular_price, 2) }}
+                                                            </h3>
+                                                        @endif
+                                                    </div>
+                                                    <p class="text-body-tertiary fw-semibold fs-9 lh-1 mb-0">
+                                                        {{ $product->variants->count() }} variants
+                                                    </p>
                                                 </div>
-                                                <p class="text-body-tertiary fw-semibold fs-9 lh-1 mb-0">{{ $product->variants->count() }} variants</p>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
                                 @empty
-                                <div class="col-12">
-                                    <p class="text-body-tertiary">No products published yet.</p>
-                                </div>
+                                    <p>No products available at the moment.</p>
                                 @endforelse
+
                                 {{-- End Product Loop --}}
                             </div>
                         </div>

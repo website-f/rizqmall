@@ -14,6 +14,9 @@
         </nav>
         <h2 class="mb-1">All Stores on Rizqmall</h2>
         <p class="mb-5 text-body-tertiary fw-semibold">Browse the best sellers and local businesses.</p>
+
+        <div id="storeMap" style="height: 400px; border-radius: 10px; margin-bottom: 2rem;"></div>
+
         
         <div class="row gx-3 gy-5">
             {{-- Dynamically loop through the stores collection --}}
@@ -59,5 +62,80 @@
             @endforelse
         </div>
     </div>
+
+    <!-- Store Detail Modal -->
+<div class="modal fade" id="storeModal" tabindex="-1" aria-labelledby="storeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="storeModalLabel">Store Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h4 id="modalStoreName"></h4>
+        <p id="modalStoreLocation" class="mb-1 text-muted"></p>
+        <p id="modalStoreDescription"></p>
+        <a id="modalVisitStoreBtn" href="#" class="btn btn-primary w-100">Visit Store</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 📌 Initialize map
+    const map = L.map('storeMap').setView([3.139, 101.6869], 11); // Default to KL
+
+    // 🗺️ Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // 📍 Try to locate user and center map
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            map.setView([lat, lng], 13);
+
+            L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: "#007bff",
+                color: "#fff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map).bindPopup("📍 You are here");
+        });
+    }
+
+    // 🏪 Store markers data
+    const stores = @json($stores);
+
+    stores.forEach(store => {
+        if (!store.latitude || !store.longitude) return; // Skip if no coordinates
+
+        const marker = L.marker([store.latitude, store.longitude]).addTo(map);
+
+        // Marker popup (hover)
+        marker.bindPopup(`<b>${store.name}</b><br>${store.location ?? 'No location'}`);
+
+        // Marker click → show modal
+        marker.on('click', () => {
+            document.getElementById('modalStoreName').textContent = store.name;
+            document.getElementById('modalStoreLocation').textContent = store.location ?? 'No location info';
+            document.getElementById('modalStoreDescription').textContent = store.description ?? 'No description';
+
+            const visitBtn = document.getElementById('modalVisitStoreBtn');
+            visitBtn.href = `#`; // Adjust your route to store profile
+
+            const modal = new bootstrap.Modal(document.getElementById('storeModal'));
+            modal.show();
+        });
+    });
+});
+</script>
 @endsection

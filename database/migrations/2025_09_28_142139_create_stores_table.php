@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('slug')->unique(); // For friendly URLs
             $table->string('location')->nullable();
             $table->text('description')->nullable();
+            $table->string('latitude')->nullable();
+            $table->string('longitude')->nullable();
             $table->timestamps();
         
             $table->unique('auth_user_id'); // optional

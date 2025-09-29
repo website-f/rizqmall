@@ -25,7 +25,13 @@
     <meta name="theme-color" content="#ffffff">
     <script src="{{asset('vendors/simplebar/simplebar.min.js')}}"></script>
     <script src="{{asset('assets/js/config.js')}}"></script>
-
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    
 
     <!-- ===============================================-->
     <!--    Stylesheets-->
@@ -351,6 +357,7 @@
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link ps-0 active" href="/">Home</a></li>
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="/stores">Stores</a></li>
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Products</a></li>
+            <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Services</a></li>
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Wishlist</a></li>
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Shipping Info</a></li>
             <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="https://rm.sandboxmalaysia.com/register/">Be a vendor</a></li>
@@ -607,6 +614,11 @@
     <script src="{{asset('vendors/dayjs/dayjs.min.js')}}"></script>
     <script src="{{asset('assets/js/phoenix.js')}}"></script>
     <script src="{{asset('vendors/swiper/swiper-bundle.min.js')}}"></script>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
 
   </body>
 
