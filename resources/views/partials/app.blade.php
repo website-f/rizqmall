@@ -430,7 +430,7 @@
           <div class="row justify-content-between gy-4">
             <div class="col-12 col-lg-4">
               <div class="d-flex align-items-center mb-3"><img src="{{asset('assets/rizqmall.jpeg')}}" alt="phoenix" width="87" />
-                <h5 class="logo-text ms-2">Rizqmall</h5>
+                <h5 class="logo-text ms-2">RizqMall HybridApps</h5>
               </div>
              
             </div>
