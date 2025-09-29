@@ -440,7 +440,15 @@
             </div>
             <div class="col-6 col-md-auto">
               <h5 class="fw-bolder mb-3">Stay Connected</h5>
-              <div class="d-flex flex-column"><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Blogs</a><a class="mb-1 fw-semibold fs-9 d-flex" href="#!"><span class="fab fa-facebook-square text-primary me-2 fs-8"></span><span class="text-body-secondary">Facebook</span></a><a class="mb-1 fw-semibold fs-9 d-flex" href="#!"><span class="fab fa-twitter-square text-info me-2 fs-8"></span><span class="text-body-secondary">Twitter</span></a></div>
+              <div class="d-flex flex-column">
+                <a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Blogs</a>
+                <a class="mb-1 fw-semibold fs-9 d-flex" href="https://www.facebook.com/rizqmallhybridapps" target="_blank"><span class="fab fa-facebook-square text-primary me-2 fs-8"></span>
+                  <span class="text-body-secondary">Facebook</span>
+                </a>
+                <a class="mb-1 fw-semibold fs-9 d-flex" href="https://www.tiktok.com/@rizqmall?lang=en" target="_blank"><span class="fab fa-tiktok text-info me-2 fs-8"></span>
+                  <span class="text-body-secondary">Tiktok</span>
+                </a>
+              </div>
             </div>
             <div class="col-6 col-md-auto">
               <h5 class="fw-bolder mb-3">Customer Service</h5>
