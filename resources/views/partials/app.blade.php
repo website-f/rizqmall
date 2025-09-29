@@ -80,7 +80,7 @@
           <div class="ecommerce-topbar">
             <nav class="navbar navbar-expand-lg navbar-light px-0">
               <div class="row gx-0 gy-2 w-100 flex-between-center">
-                <div class="col-auto"><a class="text-decoration-none" href="index.html">
+                <div class="col-auto"><a class="text-decoration-none" href="/">
                     <div class="d-flex align-items-center"><img src="{{asset('assets/rizqmall.jpeg')}}" alt="phoenix" width="87" />
                       
                     </div>
