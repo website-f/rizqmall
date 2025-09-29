@@ -447,8 +447,20 @@
               <div class="d-flex flex-column"><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Help Desk</a><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Support, 24/7</a><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Community of Phoenix</a></div>
             </div>
             <div class="col-6 col-md-auto">
-              <h5 class="fw-bolder mb-3">Payment Method</h5>
-              <div class="d-flex flex-column"><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Cash on Delivery</a><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Online Payment</a><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">PayPal</a><a class="text-body-tertiary fw-semibold fs-9 mb-1" href="#!">Installment</a></div>
+              <h5 class="fw-bolder mb-3">Address</h5>
+              <div class="d-flex flex-column">
+                <p class="text-body-tertiary fw-semibold fs-9 mb-1">IDEAS Berhad</p>
+                <p class="text-body-tertiary fw-semibold fs-9 mb-1">
+                  L02 - 63A, Menara Shaftbury Putrajaya,
+                </p>
+                <p class="text-body-tertiary fw-semibold fs-9 mb-1">
+                  Jalan Alamanda, 
+                </p>
+                <p class="text-body-tertiary fw-semibold fs-9 mb-1">
+                  Presint 1, 62000 Putrajaya
+                </p>
+
+              </div>
             </div>
           </div>
         </div>
