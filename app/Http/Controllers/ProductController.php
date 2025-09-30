@@ -146,4 +146,52 @@ class ProductController extends Controller
        return redirect()->route('rizqmall.home')
                         ->with('success', 'Product "' . $product->name . '" published successfully!');
    }
+
+    public function show($slug)
+    {
+        // 1. Find the product by slug, eager loading relationships
+        $product = Product::with(['images', 'variants', 'category', 'tags'])
+                          ->where('slug', $slug)
+                          ->where('status', 'published') 
+                          ->firstOrFail(); 
+
+        // 2. Prepare dynamic data for the view
+        
+        // Product pricing status
+        $onSale = !is_null($product->sale_price) && $product->sale_price < $product->regular_price;
+        $price = $onSale ? $product->sale_price : $product->regular_price;
+        $oldPrice = $onSale ? $product->regular_price : null;
+        $discountPercentage = $onSale ? round((($product->regular_price - $product->sale_price) / $product->regular_price) * 100) : null;
+        $inStock = $product->stock_quantity > 0;
+        
+        // Attributes
+        $attributes = [];
+        if ($product->is_fragile) $attributes[] = 'Fragile';
+        if ($product->is_biodegradable) $attributes[] = 'Biodegradable';
+        if ($product->is_frozen) $attributes[] = 'Frozen (Max Temp: ' . ($product->max_temperature ?? 'N/A') . ')';
+        if ($product->expiry_date) $attributes[] = 'Expiry Date: ' . Carbon::parse($product->expiry_date)->format('d M Y');
+        if ($product->product_id_type && $product->product_id_value) $attributes[] = $product->product_id_type . ': ' . $product->product_id_value;
+
+        // Dummy data for reviews (as requested)
+        $dummyRating = 4.9; 
+        $dummyReviewsCount = 6548;
+
+        return view('store.viewProduct', compact('product', 'onSale', 'price', 'oldPrice', 'discountPercentage', 'inStock', 'attributes', 'dummyRating', 'dummyReviewsCount'));
+    }
+
+
+    public function index(Request $request)
+    {
+        // Fetch all published products, eager load the first image (for display)
+        // and limit the results using pagination.
+        $products = Product::with('images')
+                           ->where('status', 'published')
+                           ->orderBy('created_at', 'desc')
+                           ->paginate(12); // Display 12 products per page, adjust as needed
+
+        // For the template, we'll pass a dummy rating constant
+        $dummyRating = 5;
+
+        return view('store.allProducts', compact('products', 'dummyRating'));
+    }
 }

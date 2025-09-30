@@ -115,4 +115,20 @@ class StoreController extends Controller
 
         return view('store.home', compact('categories', 'products')); // Updated compact list
     }
+
+    public function showProfile(Store $store)
+    {
+        // Fetch the store's published products (with limited data for the index view)
+        // You can add pagination here if a store has many products.
+        $products = $store->products()
+                            ->with('images') // Eager load product images for the cards
+                            ->where('status', 'published')
+                            ->orderBy('created_at', 'desc')
+                            ->paginate(12);
+
+        // Optional: Calculate a dummy rating if needed for consistency
+        $dummyRating = 4.5; 
+        
+        return view('store.store-view', compact('store', 'products', 'dummyRating'));
+    }
 }

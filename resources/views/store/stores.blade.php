@@ -38,7 +38,7 @@
                 <p class="text-body-quaternary fs-9 mb-2 fw-semibold">{{ $store->location ?? 'Global Seller' }}</p>
                 
                 {{-- Link to visit the store profile page (using route model binding with slug) --}}
-                <a class="btn btn-link p-0" href="#">
+                <a class="btn btn-link p-0" href="{{ route('store.profile', $store->slug) }}">
                     Visit Store<span class="fas fa-chevron-right ms-1 fs-10"></span>
                 </a>
 
@@ -47,7 +47,7 @@
                     <div class="btn-reveal-trigger">
                         <button class="btn btn-sm dropdown-toggle dropdown-caret-none transition-none btn-reveal lh-1 bg-body-highlight rounded-1" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false" data-bs-reference="parent"><span class="fas fa-ellipsis-h fs-9"></span></button>
                         <div class="dropdown-menu dropdown-menu-end py-2">
-                            <a class="dropdown-item" href="#">View Profile</a>
+                            <a class="dropdown-item" href="{{ route('store.profile', $store->slug) }}">View Profile</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" href="#!">Report Store</a>
                         </div>

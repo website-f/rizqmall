@@ -131,7 +131,7 @@
                                                     </div>
                                 
                                                     {{-- Placeholder link to product detail page --}}
-                                                    <a class="stretched-link" href="#">
+                                                    <a class="stretched-link" href="/product/{{$product->slug}}">
                                                         <h6 class="mb-2 lh-sm line-clamp-3 product-name">{{ $product->name }}</h6>
                                                     </a>
                                 
