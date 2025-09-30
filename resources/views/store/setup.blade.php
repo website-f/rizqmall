@@ -3,6 +3,16 @@
 @section('title', 'Setup Your Store')
     
 @section('content')
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone.css" />
+    <style>
+        .dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: #f9f9f9;
+        }
+    </style>
     <div class="container-small">
         <nav class="mb-3 mt-6" aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
@@ -41,8 +51,32 @@
                         @error('description')<div class="text-danger fs-9">{{ $message }}</div>@enderror
                     </div>
 
+                    
+
                 </div>
             </div>
+
+            {{-- Logo Upload --}}
+            <div class="card mb-5">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Store Logo 🖼️</h4>
+                    <div id="logo-dropzone" class="dropzone"></div>
+                    @error('image')<div class="text-danger fs-9">{{ $message }}</div>@enderror
+                </div>
+            </div>
+            
+            {{-- Banner Upload --}}
+            <div class="card mb-5">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Store Banner 🏞️</h4>
+                    <div id="banner-dropzone" class="dropzone"></div>
+                    @error('banner')<div class="text-danger fs-9">{{ $message }}</div>@enderror
+                </div>
+            </div>
+            
+            {{-- Hidden fields to store final uploaded file paths --}}
+            <input type="hidden" name="image" id="logo_path">
+            <input type="hidden" name="banner" id="banner_path">
 
             {{-- Location Coordinates Card --}}
             <div class="card mb-5">
@@ -58,12 +92,15 @@
 
 
                    {{-- Store Location (Text) --}}
-                    <div class="mb-4">
+                    <div class="mb-4 position-relative">
                         <label class="form-label" for="locationText">Physical Location/Address</label>
-                        <input class="form-control" id="locationText" type="text" name="location" placeholder="E.g., 123 Main St, Kuala Lumpur" value="{{ old('location') }}" />
-                        <div class="form-text">This address will be displayed to customers for local pickups.</div>
+                        <input class="form-control" id="locationText" type="text" name="location"
+                               placeholder="E.g., 123 Main St, Kuala Lumpur" value="{{ old('location') }}" autocomplete="off" />
+                        <ul id="autocomplete-results" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
+                        <div class="form-text">Start typing to search for your store location.</div>
                         @error('location')<div class="text-danger fs-9">{{ $message }}</div>@enderror
                     </div>
+
 
                     {{-- Hidden fields for latitude and longitude --}}
                     <div class="row g-3">
@@ -91,23 +128,49 @@
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-geosearch@3.7.0/dist/bundle.min.js"></script>
+<script src="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone-min.js"></script>
+<script>
+Dropzone.autoDiscover = false;
+
+function initDropzone(elementId, hiddenInputId, uploadUrl) {
+    const dz = new Dropzone(`#${elementId}`, {
+        url: uploadUrl,
+        paramName: 'file',
+        maxFiles: 1,
+        acceptedFiles: 'image/*',
+        addRemoveLinks: true,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        init: function () {
+            this.on("success", function (file, response) {
+                document.getElementById(hiddenInputId).value = response.path;
+            });
+            this.on("removedfile", function () {
+                document.getElementById(hiddenInputId).value = '';
+            });
+        }
+    });
+    return dz;
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    initDropzone('logo-dropzone', 'logo_path', '{{ route('uploads.temp') }}');
+    initDropzone('banner-dropzone', 'banner_path', '{{ route('uploads.temp') }}');
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const latInput = document.getElementById('latitude');
     const lngInput = document.getElementById('longitude');
     const addressInput = document.getElementById('locationText');
+    const resultsList = document.getElementById('autocomplete-results');
 
-    // Default center (Malaysia)
     const map = L.map('map').setView([3.1390, 101.6869], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-    // Add OpenStreetMap layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-    }).addTo(map);
-
-    // Marker placeholder
     let marker = null;
-
     function setMarker(lat, lng, address = '') {
         if (marker) map.removeLayer(marker);
         marker = L.marker([lat, lng]).addTo(map);
@@ -116,46 +179,50 @@ document.addEventListener('DOMContentLoaded', () => {
         if (address) addressInput.value = address;
     }
 
-    // Click map to select location
+    // Autocomplete search
+    let debounceTimeout;
+    addressInput.addEventListener('input', function() {
+        clearTimeout(debounceTimeout);
+        const query = this.value.trim();
+        if (query.length < 3) {
+            resultsList.innerHTML = '';
+            return;
+        }
+        debounceTimeout = setTimeout(async () => {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`;
+            const res = await fetch(url);
+            const data = await res.json();
+            resultsList.innerHTML = '';
+            data.forEach(place => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action';
+                li.textContent = place.display_name;
+                li.addEventListener('click', () => {
+                    setMarker(parseFloat(place.lat), parseFloat(place.lon), place.display_name);
+                    map.setView([place.lat, place.lon], 16);
+                    resultsList.innerHTML = '';
+                });
+                resultsList.appendChild(li);
+            });
+        }, 300);
+    });
+
+    // Click map manually
     map.on('click', async (e) => {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
-
-        // Reverse geocode to get address name
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
         try {
             const res = await fetch(url);
             const data = await res.json();
-            const address = data.display_name || '';
-            setMarker(lat, lng, address);
+            setMarker(lat, lng, data.display_name || '');
         } catch (err) {
             console.error('Reverse geocode failed', err);
             setMarker(lat, lng);
         }
     });
 
-    // Geosearch (search bar)
-    const provider = new window.GeoSearch.OpenStreetMapProvider();
-    const search = new window.GeoSearch.GeoSearchControl({
-        provider: provider,
-        style: 'bar',
-        showMarker: false,
-        autoClose: true,
-        retainZoomLevel: false,
-        searchLabel: 'Search for location...',
-        keepResult: true,
-    });
-
-    map.addControl(search);
-
-    // Handle search result selection
-    map.on('geosearch/showlocation', (result) => {
-        const { x: lng, y: lat, label: address } = result.location;
-        setMarker(lat, lng, address);
-        map.setView([lat, lng], 16);
-    });
-
-    // Optional: If old values exist, restore marker
+    // Restore marker if values exist
     if (latInput.value && lngInput.value) {
         setMarker(parseFloat(latInput.value), parseFloat(lngInput.value), addressInput.value);
         map.setView([parseFloat(latInput.value), parseFloat(lngInput.value)], 16);

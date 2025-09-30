@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StoreController extends Controller
 {
@@ -60,7 +61,7 @@ class StoreController extends Controller
         if (!$authUserId) {
             abort(403, 'Unauthorized: session expired.');
         }
-
+    
         // 1️⃣ Validation
         $request->validate([
             'name' => 'required|string|max:255',
@@ -68,8 +69,10 @@ class StoreController extends Controller
             'location' => 'nullable|string|max:255',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+            'image' => 'nullable|string',  // path from Dropzone temp
+            'banner' => 'nullable|string', // path from Dropzone temp
         ]);
-
+    
         // 2️⃣ Generate unique slug
         $slug = Str::slug($request->name);
         $uniqueSlug = $slug;
@@ -77,8 +80,33 @@ class StoreController extends Controller
         while (Store::where('slug', $uniqueSlug)->exists()) {
             $uniqueSlug = $slug . '-' . $count++;
         }
-
-        // 3️⃣ Create Store
+    
+        // 3️⃣ Handle uploaded files (move from temp to permanent folder)
+        $logoPath = null;
+        $bannerPath = null;
+        $storeFolder = 'stores/' . Str::uuid();
+    
+        if ($request->filled('image')) {
+            $tempPath = str_replace('/storage/', '', $request->image);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $logoPath = $tempPath;
+                $newLogoPath = $storeFolder . '/logo_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newLogoPath);
+                $logoPath = '/storage/' . $newLogoPath;
+            }
+        }
+    
+        if ($request->filled('banner')) {
+            $tempPath = str_replace('/storage/', '', $request->banner);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $bannerPath = $tempPath;
+                $newBannerPath = $storeFolder . '/banner_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newBannerPath);
+                $bannerPath = '/storage/' . $newBannerPath;
+            }
+        }
+    
+        // 4️⃣ Create Store
         $store = Store::create([
             'auth_user_id' => $authUserId,
             'name' => $request->name,
@@ -87,11 +115,13 @@ class StoreController extends Controller
             'description' => $request->description,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'image' => $logoPath,
+            'banner' => $bannerPath,
         ]);
-
-        // 4️⃣ Redirect to Add Product page
+    
+        // 5️⃣ Redirect to Add Product page
         return redirect()->route('store.products', ['store' => $store->id])
-        ->with('success', 'Store "' . $store->name . '" created successfully! Now add your first product.');
+            ->with('success', 'Store "' . $store->name . '" created successfully! Now add your first product.');
     }
    
 
@@ -131,4 +161,31 @@ class StoreController extends Controller
         
         return view('store.store-view', compact('store', 'products', 'dummyRating'));
     }
+
+    public function changeBanner(Request $request, Store $store)
+{
+    // Ensure user owns the store
+    if (session('auth_user_id') != $store->auth_user_id) {
+        abort(403, 'Unauthorized');
+    }
+
+    $request->validate([
+        'banner_path' => 'required|string',
+    ]);
+
+    // Move banner from temp to permanent storage
+    $tempPath = $request->banner_path;
+    $filename = basename($tempPath);
+    $permanentPath = 'stores/banners/' . $filename;
+
+    if (\Storage::disk('public')->exists($tempPath)) {
+        \Storage::disk('public')->move($tempPath, $permanentPath);
+        $store->banner = $permanentPath;
+        $store->save();
+    }
+
+    return redirect()->route('store.profile', $store->slug)
+                     ->with('success', 'Store banner updated successfully!');
+}
+
 }

@@ -18,63 +18,77 @@
         <div id="storeMap" style="height: 400px; border-radius: 10px; margin-bottom: 2rem;"></div>
 
         
-        <div class="row gx-3 gy-5">
-            {{-- Dynamically loop through the stores collection --}}
-            @forelse($stores as $store)
-            <div class="col-6 col-sm-4 col-md-3 col-lg-2 hover-actions-trigger btn-reveal-trigger">
-                
-                {{-- Store Logo Placeholder: Uses the first letter of the store name --}}
-                <div class="border border-translucent d-flex flex-center rounded-3 mb-3 p-4 bg-body-tertiary" style="height:180px;">
-                    <span class="fs-1 fw-bold text-primary">{{ substr($store->name, 0, 1) }}</span>
-                </div>
-                
-                {{-- Store Details --}}
-                <h5 class="mb-2">{{ $store->name }}</h5>
-                
-                {{-- Static placeholder for rating (for visual consistency, awaiting review logic) --}}
-                <div class="mb-1 fs-9">
-                    <span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa-regular fa-star text-warning-light"></span><span class="fa-regular fa-star text-warning-light"></span>
-                </div>
-                <p class="text-body-quaternary fs-9 mb-2 fw-semibold">{{ $store->location ?? 'Global Seller' }}</p>
-                
-                {{-- Link to visit the store profile page (using route model binding with slug) --}}
-                <a class="btn btn-link p-0" href="{{ route('store.profile', $store->slug) }}">
-                    Visit Store<span class="fas fa-chevron-right ms-1 fs-10"></span>
-                </a>
+       <div class="row gx-3 gy-5">
+           @forelse($stores as $store)
+           <div class="col-6 col-sm-4 col-md-3 col-lg-2 hover-actions-trigger btn-reveal-trigger">
+       
+               {{-- Store Logo / Placeholder --}}
+               <div class="border border-translucent d-flex flex-center rounded-3 mb-3 p-4 bg-body-tertiary" style="height:180px;">
+                   @if($store->image)
+                       <img src="{{ $store->image }}" alt="{{ $store->name }}" class="img-fluid h-100 w-auto" style="object-fit: contain;">
+                   @else
+                       <span class="fs-1 fw-bold text-primary">{{ substr($store->name, 0, 1) }}</span>
+                   @endif
+               </div>
+       
+               {{-- Store Details --}}
+               <h5 class="mb-2">{{ $store->name }}</h5>
+               <div class="mb-1 fs-9">
+                   <span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa fa-star text-warning"></span><span class="fa-regular fa-star text-warning-light"></span><span class="fa-regular fa-star text-warning-light"></span>
+               </div>
+               <p class="text-body-quaternary fs-9 mb-2 fw-semibold">{{ $store->location ?? 'Global Seller' }}</p>
+       
+               {{-- Link to visit the store profile page --}}
+               <a class="btn btn-link p-0" href="{{ route('store.profile', $store->slug) }}">
+                   Visit Store<span class="fas fa-chevron-right ms-1 fs-10"></span>
+               </a>
+       
+               {{-- Dropdown menu --}}
+               <div class="hover-actions top-0 end-0 mt-2 me-3">
+                   <div class="btn-reveal-trigger">
+                       <button class="btn btn-sm dropdown-toggle dropdown-caret-none transition-none btn-reveal lh-1 bg-body-highlight rounded-1" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false" data-bs-reference="parent"><span class="fas fa-ellipsis-h fs-9"></span></button>
+                       <div class="dropdown-menu dropdown-menu-end py-2">
+                           <a class="dropdown-item" href="{{ route('store.profile', $store->slug) }}">View Profile</a>
+                           <div class="dropdown-divider"></div>
+                           <a class="dropdown-item text-danger" href="#!">Report Store</a>
+                       </div>
+                   </div>
+               </div>
+       
+           </div>
+           @empty
+               <div class="col-12 text-center py-5">
+                   <h4 class="text-body-secondary">No stores found.</h4>
+                   <p class="text-body-tertiary">Be the first seller to set up shop!</p>
+               </div>
+           @endforelse
+       </div>
 
-                {{-- Dropdown menu for actions --}}
-                <div class="hover-actions top-0 end-0 mt-2 me-3">
-                    <div class="btn-reveal-trigger">
-                        <button class="btn btn-sm dropdown-toggle dropdown-caret-none transition-none btn-reveal lh-1 bg-body-highlight rounded-1" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false" data-bs-reference="parent"><span class="fas fa-ellipsis-h fs-9"></span></button>
-                        <div class="dropdown-menu dropdown-menu-end py-2">
-                            <a class="dropdown-item" href="{{ route('store.profile', $store->slug) }}">View Profile</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-danger" href="#!">Report Store</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @empty
-                <div class="col-12 text-center py-5">
-                    <h4 class="text-body-secondary">No stores found.</h4>
-                    <p class="text-body-tertiary">Be the first seller to set up shop!</p>
-                </div>
-            @endforelse
-        </div>
     </div>
 
-    <!-- Store Detail Modal -->
+<!-- Store Detail Modal -->
 <div class="modal fade" id="storeModal" tabindex="-1" aria-labelledby="storeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="storeModalLabel">Store Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <h4 id="modalStoreName"></h4>
-        <p id="modalStoreLocation" class="mb-1 text-muted"></p>
-        <p id="modalStoreDescription"></p>
+      <div class="modal-body text-center">
+        {{-- Banner --}}
+        <div id="modalStoreBanner" class="mb-3">
+            <img src="" alt="Store Banner" class="img-fluid rounded" style="max-height: 200px; object-fit: cover; width: 100%;">
+        </div>
+
+        {{-- Logo --}}
+        <div id="modalStoreLogo" class="mb-3">
+            <img src="" alt="Store Logo" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; border: 2px solid #ddd;">
+        </div>
+
+        <h4 id="modalStoreName" class="mb-1"></h4>
+        <p id="modalStoreLocation" class="mb-2 text-muted"></p>
+        <p id="modalStoreDescription" class="mb-3"></p>
+
         <a id="modalVisitStoreBtn" href="#" class="btn btn-primary w-100">Visit Store</a>
       </div>
     </div>
@@ -125,16 +139,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Marker click → show modal
         marker.on('click', () => {
-            document.getElementById('modalStoreName').textContent = store.name;
-            document.getElementById('modalStoreLocation').textContent = store.location ?? 'No location info';
-            document.getElementById('modalStoreDescription').textContent = store.description ?? 'No description';
+    document.getElementById('modalStoreName').textContent = store.name;
+    document.getElementById('modalStoreLocation').textContent = store.location ?? 'No location info';
+    document.getElementById('modalStoreDescription').textContent = store.description ?? 'No description';
+    
+    // Banner
+    const bannerImg = document.getElementById('modalStoreBanner').querySelector('img');
+    if(store.banner) {
+        bannerImg.src = store.banner;
+        bannerImg.style.display = 'block';
+    } else {
+        bannerImg.style.display = 'none';
+    }
 
-            const visitBtn = document.getElementById('modalVisitStoreBtn');
-            visitBtn.href = `#`; // Adjust your route to store profile
+    // Logo
+    const logoImg = document.getElementById('modalStoreLogo').querySelector('img');
+    if(store.image) {
+        logoImg.src = store.image;
+        logoImg.style.display = 'inline-block';
+    } else {
+        logoImg.style.display = 'none';
+    }
 
-            const modal = new bootstrap.Modal(document.getElementById('storeModal'));
-            modal.show();
-        });
+    // Visit Store button
+    const visitBtn = document.getElementById('modalVisitStoreBtn');
+    visitBtn.href = `/stores/${store.slug}`; // Adjust route if necessary
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('storeModal'));
+    modal.show();
+});
     });
 });
 </script>
