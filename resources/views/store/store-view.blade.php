@@ -4,10 +4,7 @@
 
 @section('styles')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-o9N1jV+0v+0QvC8FzCkUq/0bDjhS+PSHkP6u5A9gCtg=" crossorigin=""/>
-<link rel="stylesheet" href="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone.css"/>
 <style>
-    /* Ensure the map container has height and corner styling */
-    #storeLocationMap { border-radius: 10px; z-index: 1; height: 350px !important; } 
     /* Style for the logo placeholder to ensure it's centered */
     .store-logo-placeholder { 
         width:100%; 
@@ -16,6 +13,14 @@
         border-radius: 50%;
         background-color: var(--phoenix-body-tertiary-bg);
     }
+
+    .dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: #f9f9f9;
+        }
 </style>
 @endsection
 
@@ -30,50 +35,64 @@
             </ol>
         </nav>
 
-        {{-- 1. Banner Section (with edit button) --}}
-        {{-- Banner --}}
-<div class="position-relative mb-5 rounded-3 overflow-hidden bg-body-tertiary" style="height: 300px;">
-    @if($store->banner)
-        <img src="{{ asset($store->banner) }}" alt="Store Banner" class="img-fluid" style="width:100%; height: 100%; object-fit: cover;">
-    @else
-        <div class="d-flex flex-center h-100"><h3 class="text-body-secondary">Store Banner Placeholder</h3></div>
-    @endif
+        <div class="position-relative mb-5 rounded-3 overflow-hidden bg-body-tertiary" style="height: 300px; z-index: 1;">
+            @if($store->banner)
+                <img src="{{ asset($store->banner) }}" 
+                     alt="Store Banner" 
+                     class="img-fluid" 
+                     style="width:100%; height: 100%; object-fit: cover;">
+            @else
+                <div class="d-flex flex-center h-100">
+                    <h3 class="text-body-secondary">Store Banner Placeholder</h3>
+                </div>
+            @endif
+        
+            {{-- ✨ Restyled Change Banner Button - Top Left --}}
+           
+        </div>
 
-    {{-- The Edit Button with Z-index to ensure visibility --}}
-    @if(session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
-        <button 
-            class="btn btn-warning position-absolute top-3 end-3 shadow-sm" 
-            data-bs-toggle="modal" 
-            data-bs-target="#changeBannerModal"
-            style="z-index: 10;" {{-- Add z-index to bring it forward --}}
-        >
-            <span class="fas fa-edit me-1"></span> Change Banner
-        </button>
-    @endif
-</div>
 
         {{-- 2. Store Header / Info Card --}}
-        <div class="card mb-5 border border-translucent shadow-sm">
-            <div class="card-body p-4 p-md-5 d-flex align-items-center justify-content-between flex-wrap">
-                
-                <div class="d-flex align-items-center flex-grow-1 me-3">
-                    {{-- Logo/Image --}}
-                    <div class="avatar avatar-3xl border border-translucent me-4">
+        <div class="card mb-5 border-0 shadow-sm rounded-4" style="backdrop-filter: blur(8px); background: rgba(255,255,255,0.85);">
+            <div class="card-body p-4 p-md-5 d-flex flex-wrap align-items-center justify-content-between">
+        
+                <div class="d-flex align-items-start flex-grow-1 me-3">
+                    {{-- Logo --}}
+                    <div class="avatar avatar-4xl border border-light shadow-sm me-4">
                         @if($store->image)
                             <img src="{{ asset($store->image) }}" alt="Store Logo" class="rounded-circle store-logo-placeholder">
                         @else
-                            <div class="avatar-name rounded-circle"><span class="fs-4">{{ substr($store->name, 0, 1) }}</span></div>
+                            <div class="avatar-name rounded-circle bg-secondary text-white fs-3 d-flex align-items-center justify-content-center">
+                                {{ substr($store->name, 0, 1) }}
+                            </div>
                         @endif
                     </div>
-
-                    {{-- Text Details --}}
+        
+                    {{-- Store Text Details --}}
                     <div>
-                        <h2 class="mb-1 text-body-emphasis">{{ $store->name }}</h2>
-                        <p class="text-body-secondary mb-1 fs-9">
-                            <span class="fas fa-map-marker-alt me-1"></span>{{ $store->location ?? 'Online Global Seller' }}
+                        <h2 class="mb-1 fw-bold text-body-emphasis">{{ $store->name }}</h2>
+        
+                        @if($store->location)
+                            <p class="text-body-secondary mb-1 fs-9">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ $store->location }}
+                            </p>
+                        @endif
+        
+                        {{-- ✨ New Contact Info Section --}}
+                        <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 fs-9 mb-2 text-body-secondary">
+                            @if($store->phone)
+                                <div><i class="fas fa-phone me-1 text-success"></i> {{ $store->phone }}</div>
+                            @endif
+                            @if($store->email)
+                                <div><i class="fas fa-envelope me-1 text-primary"></i> {{ $store->email }}</div>
+                            @endif
+                        </div>
+        
+                        {{-- Description --}}
+                        <p class="text-body-tertiary fs-9 mb-2">
+                            {{ $store->description ?? 'No detailed description available.' }}
                         </p>
-                        <p class="text-body-tertiary mb-2 fs-9">{{ $store->description ?? 'No detailed description available.' }}</p>
-                        
+        
                         {{-- Rating --}}
                         <div class="fs-9">
                             @for ($i = 0; $i < floor($dummyRating); $i++)
@@ -89,22 +108,36 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Action Button (Add Product) --}}
+        
+                {{-- Add Product & Change Banner Buttons (Centered) --}}
                 @if(session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
-                    <div class="mt-3 mt-md-0">
-                        <a href="{{ route('store.products', ['store' => $store->id]) }}" class="btn btn-primary">
-                            <span class="fas fa-plus me-1"></span> Add Product
+                    <div class="w-100 mt-4 d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{{ route('store.products', ['store' => $store->id]) }}" 
+                           class="btn btn-primary rounded-pill px-4 shadow-sm d-flex align-items-center">
+                            <i class="fas fa-plus me-1"></i> Add Product
                         </a>
+                
+                        <button 
+                            class="btn btn-warning rounded-pill px-4 shadow-sm d-flex align-items-center"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#changeBannerModal"
+                        >
+                            <i class="fas fa-edit me-1"></i>
+                            <span class="fw-semibold d-none d-sm-inline">Change Banner</span>
+                        </button>
                     </div>
                 @endif
+
+        
             </div>
         </div>
 
         {{-- 3. Map Section --}}
-        @if($store->latitude && $store->longitude)
+        @if(isset($store->latitude) && isset($store->longitude))
             <h3 class="mb-3 text-body-emphasis">Our Location</h3>
-            <div id="storeLocationMap" class="mb-5 shadow-sm"></div>
+            <div id="storeLocationMap" style="height: 350px;"></div>
+        @else
+          <h3>No Map Recorded</h3>
         @endif
 
         <hr class="my-6">
@@ -194,36 +227,45 @@
 @endsection
 
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jV+0v+0QvC8FzCkUq/0bDjhS+PSHkP6u5A9gCtg=" crossorigin=""></script>
-<script src="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone-min.js"></script>
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 @if($store->latitude && $store->longitude)
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Wrap map initialization in a timeout to allow CSS/DOM rendering to complete
     setTimeout(() => {
         const mapContainer = document.getElementById('storeLocationMap');
         
         if (mapContainer) {
-            const latitude = {{ $store->latitude }};
-            const longitude = {{ $store->longitude }};
-            
+            const latitude = {{ $store->latitude ?? 0 }};
+            const longitude = {{ $store->longitude ?? 0 }};
+            const storeName = "{{ addslashes($store->name) }}";
+            const storeLocation = "{{ addslashes($store->location ?? '') }}";
+
             // 1. Initialize Map
             const map = L.map('storeLocationMap').setView([latitude, longitude], 16);
-            
+
             // 2. Add Tile Layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-            
-            // 3. Add Marker
-            L.marker([latitude, longitude]).addTo(map)
-                .bindPopup("<b>{{ $store->name }}</b><br>{{ $store->location ?? 'No location' }}")
-                .openPopup();
-                
-            // 4. CRUCIAL: Force map to redraw based on container's actual size
-            map.invalidateSize(); 
+
+            // 3. Add Marker with clickable popup
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+
+            const marker = L.marker([latitude, longitude]).addTo(map)
+                .bindPopup(`
+                    <b>${storeName}</b><br>
+                    ${storeLocation || 'No location'}<br>
+                    <a href="${googleMapsUrl}" target="_blank" class="btn btn-sm text-white btn-primary mt-1">Go to Maps</a>
+                `);
+
+            // Optional: open popup by default
+            marker.openPopup();
+
+            // 4. Force map redraw
+            map.invalidateSize();
         }
-    }, 100); // 100ms delay is usually enough
+    }, 100);
 });
+
 </script>
 @endif
 

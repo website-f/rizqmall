@@ -64,6 +64,8 @@ class StoreController extends Controller
         // 1️⃣ Validation
         $request->validate([
             'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:255',
+            'email' => 'required|string|max:255',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'latitude' => 'required|numeric|between:-90,90',
@@ -109,6 +111,8 @@ class StoreController extends Controller
         $store = Store::create([
             'auth_user_id' => $authUserId,
             'name' => $request->name,
+            'phone' => $request->phone,
+            'email' => $request->email,
             'slug' => $uniqueSlug,
             'location' => $request->location,
             'description' => $request->description,

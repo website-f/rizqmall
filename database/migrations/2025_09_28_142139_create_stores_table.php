@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('image')->nullable();
             $table->string('banner')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
             $table->string('slug')->unique(); // For friendly URLs
             $table->string('location')->nullable();
             $table->text('description')->nullable();

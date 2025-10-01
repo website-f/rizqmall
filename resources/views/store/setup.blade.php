@@ -44,6 +44,18 @@
                         @error('name')<div class="text-danger fs-9">{{ $message }}</div>@enderror
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label" for="storeName">Phone Number</label>
+                        <input class="form-control" id="storePhone" type="text" name="phone" value="{{ old('phone') }}" required />
+                        @error('phone')<div class="text-danger fs-9">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="storeName">Email</label>
+                        <input class="form-control" id="storeEmail" type="email" name="email" placeholder="E.g. Fitri@demo.com" value="{{ old('email') }}" required />
+                        @error('email')<div class="text-danger fs-9">{{ $message }}</div>@enderror
+                    </div>
+
                     {{-- Store Description --}}
                     <div class="mb-4">
                         <label class="form-label" for="description">Store Description</label>

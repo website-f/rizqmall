@@ -25,12 +25,8 @@
     <meta name="theme-color" content="#ffffff">
     <script src="{{asset('vendors/simplebar/simplebar.min.js')}}"></script>
     <script src="{{asset('assets/js/config.js')}}"></script>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.7.0/dist/geosearch.css" />
     
 
     <!-- ===============================================-->
@@ -107,7 +103,7 @@
                                 <img class="rounded-circle " src="{{asset('defUse.jpg')}}" alt="" />
 
                               </div>
-                              <h6 class="mt-2 text-body-emphasis">Jerry Seinfield</h6>
+                              <h6 class="mt-2 text-body-emphasis">User</h6>
                             </div>
                             <div class="mb-3 mx-3">
                               
@@ -348,11 +344,7 @@
     <script src="{{asset('vendors/glightbox/glightbox.min.js')}}"> </script>
     <script src="{{asset('assets/js/phoenix.js')}}"></script>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
+    @stack('scripts')
 
   </body>
 
