@@ -26,6 +26,8 @@ class StoreController extends Controller
         // 1️⃣ Get auth_user_id from query string (sent from Sandbox)
         $authUserId = $request->query('user_id');
 
+        session(['auth_user_id' => $authUserId]);
+
         if (!$authUserId) {
             abort(403, 'Unauthorized: user_id missing.');
         }
@@ -38,9 +40,6 @@ class StoreController extends Controller
             return redirect('/stores')
                 ->with('info', 'You already have a store. Redirected to your store page.');
         }
-
-        // 3️⃣ Store auth_user_id in session for use during form submission
-        session(['auth_user_id' => $authUserId]);
 
         // 4️⃣ Pass user details (optional) from query to form
         $prefill = [
