@@ -135,7 +135,7 @@
         {{-- 3. Map Section --}}
         @if(isset($store->latitude) && isset($store->longitude))
             <h3 class="mb-3 text-body-emphasis">Our Location</h3>
-            <div id="storeLocationMap" style="height: 350px;"></div>
+           
         @else
           <h3>No Map Recorded</h3>
         @endif
@@ -227,47 +227,9 @@
 @endsection
 
 @push('scripts')
- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-@if($store->latitude && $store->longitude)
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        const mapContainer = document.getElementById('storeLocationMap');
-        
-        if (mapContainer) {
-            const latitude = {{ $store->latitude ?? 0 }};
-            const longitude = {{ $store->longitude ?? 0 }};
-            const storeName = "{{ addslashes($store->name) }}";
-            const storeLocation = "{{ addslashes($store->location ?? '') }}";
 
-            // 1. Initialize Map
-            const map = L.map('storeLocationMap').setView([latitude, longitude], 16);
 
-            // 2. Add Tile Layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-
-            // 3. Add Marker with clickable popup
-            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-
-            const marker = L.marker([latitude, longitude]).addTo(map)
-                .bindPopup(`
-                    <b>${storeName}</b><br>
-                    ${storeLocation || 'No location'}<br>
-                    <a href="${googleMapsUrl}" target="_blank" class="btn btn-sm text-white btn-primary mt-1">Go to Maps</a>
-                `);
-
-            // Optional: open popup by default
-            marker.openPopup();
-
-            // 4. Force map redraw
-            map.invalidateSize();
-        }
-    }, 100);
-});
-
-</script>
-@endif
 
 <script>
 Dropzone.autoDiscover = false;
