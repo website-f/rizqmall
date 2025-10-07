@@ -9,12 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tag extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'color'];
 
-    /**
-     * The products that have this Tag.
-     */
-    public function products(): BelongsToMany
+    public function products()
     {
         return $this->belongsToMany(Product::class);
     }

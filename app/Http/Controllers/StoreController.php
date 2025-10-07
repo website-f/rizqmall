@@ -3,113 +3,129 @@
 namespace App\Http\Controllers;
 
 use App\Models\Store;
-use App\Models\Product;
-use App\Models\Category;
+use App\Models\StoreCategory;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class StoreController extends Controller
 {
-    public function stores()
+    /**
+     * Show store category selection (first step)
+     */
+    public function showCategorySelection(Request $request)
     {
-        // Fetch all stores, ordered alphabetically by name
-        $stores = Store::orderBy('name')->get(); 
-
-        // Pass the fetched data to the view
-        return view('store.stores', compact('stores'));
-    }
-
-
-     public function showSetupForm(Request $request)
-    {
-        // 1️⃣ Get auth_user_id from query string (sent from Sandbox)
         $authUserId = $request->query('user_id');
-
         session(['auth_user_id' => $authUserId]);
 
         if (!$authUserId) {
             abort(403, 'Unauthorized: user_id missing.');
         }
 
-        // 2️⃣ Check if this auth_user_id already has a store
+        // Check if user already has a store
         $existingStore = Store::where('auth_user_id', $authUserId)->first();
-
         if ($existingStore) {
-            // Redirect to store listing page if store already exists
-            return redirect('/stores')
-                ->with('info', 'You already have a store. Redirected to your store page.');
+            return redirect()->route('rizqmall.home')
+                ->with('info', 'You already have a store.');
         }
 
-        // 4️⃣ Pass user details (optional) from query to form
+        // Get active store categories
+        $categories = StoreCategory::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('store.select-category', compact('categories'));
+    }
+
+    /**
+     * Show store setup form (second step)
+     */
+    public function showSetupForm(Request $request)
+    {
+        $authUserId = session('auth_user_id');
+        if (!$authUserId) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Session expired. Please start again.');
+        }
+
+        $categoryId = $request->query('category');
+        if (!$categoryId) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please select a store category.');
+        }
+
+        $category = StoreCategory::findOrFail($categoryId);
+        session(['selected_store_category' => $categoryId]);
+
         $prefill = [
             'email' => $request->query('email'),
             'name'  => $request->query('name'),
         ];
 
-        return view('store.setup', compact('prefill'));
+        return view('store.setup', compact('category', 'prefill'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created store
      */
-   public function store(Request $request)
+    public function store(Request $request)
     {
-        // Get auth_user_id from session (set during showSetupForm)
         $authUserId = session('auth_user_id');
-        if (!$authUserId) {
-            abort(403, 'Unauthorized: session expired.');
+        $storeCategoryId = session('selected_store_category');
+
+        if (!$authUserId || !$storeCategoryId) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Session expired. Please start again.');
         }
-    
-        // 1️⃣ Validation
+
+        // Validation
         $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
-            'email' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
-            'image' => 'nullable|string',  // path from Dropzone temp
-            'banner' => 'nullable|string', // path from Dropzone temp
+            'image' => 'nullable|string',
+            'banner' => 'nullable|string',
         ]);
-    
-        // 2️⃣ Generate unique slug
+
+        // Generate unique slug
         $slug = Str::slug($request->name);
         $uniqueSlug = $slug;
         $count = 2;
         while (Store::where('slug', $uniqueSlug)->exists()) {
             $uniqueSlug = $slug . '-' . $count++;
         }
-    
-        // 3️⃣ Handle uploaded files (move from temp to permanent folder)
+
+        // Handle uploaded files
         $logoPath = null;
         $bannerPath = null;
         $storeFolder = 'stores/' . Str::uuid();
-    
+
         if ($request->filled('image')) {
             $tempPath = str_replace('/storage/', '', $request->image);
             if (Storage::disk('public')->exists($tempPath)) {
-                $logoPath = $tempPath;
                 $newLogoPath = $storeFolder . '/logo_' . basename($tempPath);
                 Storage::disk('public')->move($tempPath, $newLogoPath);
-                $logoPath = '/storage/' . $newLogoPath;
+                $logoPath = $newLogoPath;
             }
         }
-    
+
         if ($request->filled('banner')) {
             $tempPath = str_replace('/storage/', '', $request->banner);
             if (Storage::disk('public')->exists($tempPath)) {
-                $bannerPath = $tempPath;
                 $newBannerPath = $storeFolder . '/banner_' . basename($tempPath);
                 Storage::disk('public')->move($tempPath, $newBannerPath);
-                $bannerPath = '/storage/' . $newBannerPath;
+                $bannerPath = $newBannerPath;
             }
         }
-    
-        // 4️⃣ Create Store
+
+        // Create Store
         $store = Store::create([
             'auth_user_id' => $authUserId,
+            'store_category_id' => $storeCategoryId,
             'name' => $request->name,
             'phone' => $request->phone,
             'email' => $request->email,
@@ -121,74 +137,103 @@ class StoreController extends Controller
             'image' => $logoPath,
             'banner' => $bannerPath,
         ]);
-    
-        // 5️⃣ Redirect to Add Product page
-        return redirect()->route('store.products', ['store' => $store->id])
-            ->with('success', 'Store "' . $store->name . '" created successfully! Now add your first product.');
-    }
-   
 
-    // Rizqmall homepage showing all stores
-     public function home()
+        // Get store category to determine redirect
+        $category = StoreCategory::find($storeCategoryId);
+        
+        // Redirect based on category
+        if ($category->slug === 'marketplace') {
+            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'product'])
+                ->with('success', 'Store created! Now add your first product.');
+        } elseif ($category->slug === 'services') {
+            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'service'])
+                ->with('success', 'Store created! Now add your first service.');
+        } elseif ($category->slug === 'pharmacy') {
+            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'pharmacy'])
+                ->with('success', 'Store created! Now add your first pharmacy item.');
+        }
+
+        return redirect()->route('rizqmall.home')
+            ->with('success', 'Store created successfully!');
+    }
+
+    /**
+     * Homepage showing all stores
+     */
+    public function home()
     {
-        // 1. Fetch all root (parent) categories for the top navigation bar.
-        $categories = Category::whereNull('parent_id')
-                              ->orderBy('name', 'asc')
-                              ->get();
-                              
-        // 2. Fetch general products for the main "Top Deals" slider.
-        // We ensure the product is published, load its variants, and limit the count.
-        $products = Product::where('status', 'published')
-                           ->with('variants')
-                           ->inRandomOrder()
-                           ->limit(10)
-                           ->get();
-                           
-        // The `$electronics` fetch logic has been removed.
+        // Get ALL store categories (both active and inactive)
+        $storeCategories = StoreCategory::orderBy('sort_order')->get();
 
-        return view('store.home', compact('categories', 'products')); // Updated compact list
+        // Get featured products from all categories
+        $featuredProducts = \App\Models\Product::where('status', 'published')
+            ->with(['images' => fn($q) => $q->where('is_primary', true), 'store'])
+            ->inRandomOrder()
+            ->limit(12)
+            ->get();
+
+        return view('store.home', compact('storeCategories', 'featuredProducts'));
     }
 
+    /**
+     * Show all stores
+     */
+    public function stores()
+    {
+        $stores = Store::with(['category'])
+            ->withCount(['products' => function($query) {
+                $query->where('status', 'published');
+            }])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->paginate(12);
+
+        return view('store.stores', compact('stores'));
+    }
+
+    /**
+     * Show store profile
+     */
     public function showProfile(Store $store)
     {
-        // Fetch the store's published products (with limited data for the index view)
-        // You can add pagination here if a store has many products.
         $products = $store->products()
-                            ->with('images') // Eager load product images for the cards
-                            ->where('status', 'published')
-                            ->orderBy('created_at', 'desc')
-                            ->paginate(12);
+            ->with(['images' => fn($q) => $q->where('is_primary', true), 'category'])
+            ->where('status', 'published')
+            ->orderBy('created_at', 'desc')
+            ->paginate(12);
 
-        // Optional: Calculate a dummy rating if needed for consistency
-        $dummyRating = 4.5; 
-        
-        return view('store.store-view', compact('store', 'products', 'dummyRating'));
+        return view('store.store-view', compact('store', 'products'));
     }
 
+    /**
+     * Change store banner
+     */
     public function changeBanner(Request $request, Store $store)
-{
-    // Ensure user owns the store
-    if (session('auth_user_id') != $store->auth_user_id) {
-        abort(403, 'Unauthorized');
+    {
+        if (session('auth_user_id') != $store->auth_user_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'banner_path' => 'required|string',
+        ]);
+
+        $tempPath = str_replace('/storage/', '', $request->banner_path);
+        $filename = basename($tempPath);
+        $permanentPath = 'stores/banners/' . $filename;
+
+        if (Storage::disk('public')->exists($tempPath)) {
+            // Delete old banner
+            if ($store->banner) {
+                Storage::disk('public')->delete($store->banner);
+            }
+            
+            Storage::disk('public')->move($tempPath, $permanentPath);
+            $store->banner = $permanentPath;
+            $store->save();
+        }
+
+        return redirect()->route('store.profile', $store->slug)
+            ->with('success', 'Store banner updated successfully!');
     }
-
-    $request->validate([
-        'banner_path' => 'required|string',
-    ]);
-
-    // Move banner from temp to permanent storage
-    $tempPath = $request->banner_path;
-    $filename = basename($tempPath);
-    $permanentPath = 'stores/banners/' . $filename;
-
-    if (\Storage::disk('public')->exists($tempPath)) {
-        \Storage::disk('public')->move($tempPath, $permanentPath);
-        $store->banner = $permanentPath;
-        $store->save();
-    }
-
-    return redirect()->route('store.profile', $store->slug)
-                     ->with('success', 'Store banner updated successfully!');
-}
-
 }

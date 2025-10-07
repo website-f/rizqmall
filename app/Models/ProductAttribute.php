@@ -9,13 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductAttribute extends Model
 {
-    protected $fillable = ['name', 'type'];
+    protected $fillable = [
+        'name', 'slug', 'display_type', 'sort_order', 'is_visible'
+    ];
 
-    /**
-     * Get all attribute values associated with this attribute type.
-     */
-    public function values(): HasMany
+    protected $casts = [
+        'is_visible' => 'boolean',
+    ];
+
+    public function options()
     {
-        return $this->hasMany(ProductAttributeValue::class, 'attribute_id');
+        return $this->hasMany(AttributeOption::class, 'attribute_id')->orderBy('sort_order');
+    }
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_attribute_pivot')
+            ->withPivot('sort_order')
+            ->withTimestamps();
     }
 }

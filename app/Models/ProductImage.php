@@ -9,26 +9,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductImage extends Model
 {
-    protected $fillable = [
-        'product_id',
-        'variant_id',
-        'path',
-        'order',
+   protected $fillable = [
+        'product_id', 'variant_id', 'path', 'thumbnail_path', 'alt_text',
+        'sort_order', 'is_primary'
     ];
 
-    /**
-     * Get the product the image belongs to.
-     */
-    public function product(): BelongsTo
+    protected $casts = [
+        'is_primary' => 'boolean',
+    ];
+
+    public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Get the variant the image belongs to (if any).
-     */
-    public function variant(): BelongsTo
+    public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function getUrlAttribute()
+    {
+        return asset('storage/' . $this->path);
+    }
+
+    public function getThumbnailUrlAttribute()
+    {
+        return $this->thumbnail_path ? asset('storage/' . $this->thumbnail_path) : $this->url;
     }
 }

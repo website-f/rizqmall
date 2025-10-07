@@ -1,15 +1,15 @@
-@extends('partials.app')
+@extends('layouts.app')
 
 @section('title', $product->name)
 
 @section('content')
 <style>
-    .product-detail-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; }
+    .product-detail-container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
     
     /* Image Gallery */
     .image-gallery { position: sticky; top: 20px; }
     .main-image-container {
-        border-radius: 20px;
+        border-radius: 16px;
         overflow: hidden;
         background: #f9fafb;
         aspect-ratio: 1;
@@ -17,7 +17,7 @@
         align-items: center;
         justify-content: center;
         margin-bottom: 16px;
-        border: 2px solid #e5e7eb;
+        border: 1px solid #e5e7eb;
     }
     .main-image { width: 100%; height: 100%; object-fit: contain; }
     
@@ -28,50 +28,32 @@
     }
     .thumbnail-item {
         aspect-ratio: 1;
-        border-radius: 12px;
+        border-radius: 8px;
         overflow: hidden;
         cursor: pointer;
-        border: 3px solid transparent;
+        border: 2px solid transparent;
         transition: all 0.2s ease;
     }
-    .thumbnail-item:hover, .thumbnail-item.active { 
-        border-color: #3b82f6; 
-        transform: translateY(-2px); 
-    }
+    .thumbnail-item:hover { border-color: #3b82f6; transform: translateY(-2px); }
+    .thumbnail-item.active { border-color: #3b82f6; }
     .thumbnail-item img { width: 100%; height: 100%; object-fit: cover; }
     
     /* Product Info */
-    .product-title { 
-        font-size: 32px; 
-        font-weight: 800; 
-        line-height: 1.2; 
-        margin-bottom: 16px;
-        color: #1f2937;
-    }
-    
+    .product-title { font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 16px; }
     .price-section { 
         background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
         padding: 24px;
-        border-radius: 16px;
+        border-radius: 12px;
         margin: 24px 0;
     }
-    .current-price { 
-        font-size: 38px; 
-        font-weight: 800; 
-        color: #3b82f6; 
-    }
-    .old-price { 
-        font-size: 24px; 
-        color: #9ca3af; 
-        text-decoration: line-through; 
-        margin-left: 12px; 
-    }
+    .current-price { font-size: 36px; font-weight: 700; color: #3b82f6; }
+    .old-price { font-size: 24px; color: #9ca3af; text-decoration: line-through; margin-left: 12px; }
     .discount-badge {
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         color: white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
         font-size: 14px;
         display: inline-block;
         margin-left: 12px;
@@ -89,18 +71,17 @@
     /* Variant Selector */
     .variant-section {
         background: white;
-        border: 2px solid #e5e7eb;
-        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
         padding: 24px;
         margin: 24px 0;
     }
     .variant-group { margin-bottom: 24px; }
     .variant-label {
-        font-weight: 700;
+        font-weight: 600;
         font-size: 16px;
         margin-bottom: 12px;
         display: block;
-        color: #374151;
     }
     .variant-options {
         display: flex;
@@ -110,25 +91,26 @@
     .variant-option {
         padding: 12px 20px;
         border: 2px solid #e5e7eb;
-        border-radius: 10px;
+        border-radius: 8px;
         background: white;
         cursor: pointer;
         transition: all 0.2s ease;
-        font-weight: 600;
-        color: #6b7280;
+        font-weight: 500;
     }
-    .variant-option:hover { 
-        border-color: #3b82f6; 
-        transform: translateY(-2px);
-    }
+    .variant-option:hover { border-color: #3b82f6; }
     .variant-option.selected {
         border-color: #3b82f6;
-        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        background: #eff6ff;
         color: #3b82f6;
     }
+    .variant-option.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: #f3f4f6;
+    }
     .variant-option.color-swatch {
-        width: 50px;
-        height: 50px;
+        width: 48px;
+        height: 48px;
         padding: 0;
         border-radius: 50%;
         position: relative;
@@ -141,8 +123,8 @@
         transform: translate(-50%, -50%);
         color: white;
         font-weight: bold;
-        font-size: 22px;
-        text-shadow: 0 0 4px rgba(0,0,0,0.8);
+        font-size: 20px;
+        text-shadow: 0 0 3px rgba(0,0,0,0.8);
     }
     
     /* Quantity Selector */
@@ -153,31 +135,24 @@
         margin: 24px 0;
     }
     .qty-btn {
-        width: 44px;
-        height: 44px;
-        border: 2px solid #e5e7eb;
+        width: 40px;
+        height: 40px;
+        border: 1px solid #e5e7eb;
         background: white;
-        border-radius: 10px;
+        border-radius: 8px;
         cursor: pointer;
         font-size: 20px;
-        font-weight: 700;
         transition: all 0.2s ease;
-        color: #6b7280;
     }
-    .qty-btn:hover { 
-        background: #f3f4f6; 
-        border-color: #3b82f6;
-        color: #3b82f6;
-    }
+    .qty-btn:hover { background: #f3f4f6; }
     .qty-input {
         width: 80px;
-        height: 44px;
+        height: 40px;
         text-align: center;
-        border: 2px solid #e5e7eb;
-        border-radius: 10px;
-        font-size: 18px;
-        font-weight: 700;
-        color: #1f2937;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
     }
     
     /* Action Buttons */
@@ -190,14 +165,11 @@
         border: none;
         border-radius: 12px;
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    .btn-add-cart:hover { 
-        transform: translateY(-3px); 
-        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4); 
-    }
+    .btn-add-cart:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
     .btn-buy-now {
         flex: 1;
         padding: 16px 32px;
@@ -206,14 +178,11 @@
         border: none;
         border-radius: 12px;
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    .btn-buy-now:hover { 
-        transform: translateY(-3px); 
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); 
-    }
+    .btn-buy-now:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4); }
     .btn-wishlist {
         width: 56px;
         height: 56px;
@@ -237,21 +206,22 @@
         align-items: center;
         gap: 8px;
         padding: 8px 16px;
-        border-radius: 10px;
-        font-weight: 700;
+        border-radius: 8px;
+        font-weight: 600;
         font-size: 14px;
     }
     .stock-badge.in-stock { background: #d1fae5; color: #065f46; }
     .stock-badge.out-stock { background: #fee2e2; color: #991b1b; }
+    .stock-badge.low-stock { background: #fef3c7; color: #92400e; }
     
-    /* Tabs */
+    /* Product Details Tabs */
     .product-tabs { margin-top: 60px; }
-    .nav-tabs { border-bottom: 3px solid #e5e7eb; }
+    .nav-tabs { border-bottom: 2px solid #e5e7eb; }
     .nav-tabs .nav-link {
         border: none;
         border-bottom: 3px solid transparent;
         color: #6b7280;
-        font-weight: 700;
+        font-weight: 600;
         padding: 16px 24px;
         transition: all 0.2s ease;
     }
@@ -265,22 +235,23 @@
     .specifications-table { width: 100%; }
     .specifications-table tr { border-bottom: 1px solid #e5e7eb; }
     .specifications-table td { padding: 16px 0; }
-    .spec-label { font-weight: 700; width: 30%; color: #6b7280; }
+    .spec-label { font-weight: 600; width: 30%; color: #6b7280; }
     .spec-value { color: #1f2937; }
     
+    /* Attributes Badges */
     .attribute-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
     .attribute-badge {
-        padding: 8px 14px;
+        padding: 6px 12px;
         background: #f3f4f6;
-        border-radius: 8px;
+        border-radius: 6px;
         font-size: 14px;
         color: #4b5563;
-        font-weight: 600;
         display: inline-flex;
         align-items: center;
         gap: 6px;
     }
     
+    /* Responsive */
     @media (max-width: 768px) {
         .product-title { font-size: 24px; }
         .current-price { font-size: 28px; }
@@ -292,7 +263,7 @@
     <nav class="mb-4" aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('products.index') }}">{{ ucfirst($product->type) }}s</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('products.index') }}">Products</a></li>
             @if($product->category)
                 <li class="breadcrumb-item"><a href="#">{{ $product->category->name }}</a></li>
             @endif
@@ -301,7 +272,7 @@
     </nav>
 
     <div class="row g-4">
-        <!-- Left: Image Gallery -->
+        {{-- Left: Image Gallery --}}
         <div class="col-lg-5">
             <div class="image-gallery">
                 <div class="main-image-container">
@@ -324,58 +295,48 @@
             </div>
         </div>
 
-        <!-- Right: Product Info -->
+        {{-- Right: Product Info --}}
         <div class="col-lg-7">
             <h1 class="product-title">{{ $product->name }}</h1>
             
-            <!-- Rating -->
+            {{-- Rating --}}
             <div class="rating-display">
                 <div class="stars">
                     @for($i = 1; $i <= 5; $i++)
-                        @if($i <= floor($product->rating_average))
+                        @if($i <= floor($dummyRating))
                             <i class="fas fa-star"></i>
-                        @elseif($i - 0.5 <= $product->rating_average)
+                        @elseif($i - 0.5 <= $dummyRating)
                             <i class="fas fa-star-half-alt"></i>
                         @else
                             <i class="far fa-star"></i>
                         @endif
                     @endfor
                 </div>
-                <span><strong>{{ number_format($product->rating_average, 1) }}</strong></span>
-                <span class="text-muted">({{ number_format($product->rating_count) }} reviews)</span>
+                <span><strong>{{ $dummyRating }}</strong></span>
+                <span class="text-muted">({{ number_format($dummyReviewsCount) }} reviews)</span>
                 <span class="text-muted ms-3">|</span>
                 <span class="text-muted ms-3">{{ number_format($product->sold_count) }} sold</span>
             </div>
 
-            <!-- Short Description -->
+            {{-- Short Description --}}
             @if($product->short_description)
             <p class="text-muted mb-3">{{ $product->short_description }}</p>
             @endif
 
-            <!-- Price Section -->
+            {{-- Price Section --}}
             <div class="price-section">
-                <div class="d-flex align-items-center flex-wrap">
-                    <span class="current-price" id="displayPrice">RM {{ number_format($product->on_sale ? $product->sale_price : $product->regular_price, 2) }}</span>
-                    @if($product->on_sale)
-                    <span class="old-price">RM {{ number_format($product->regular_price, 2) }}</span>
-                    <span class="discount-badge">{{ $product->discount_percentage }}% OFF</span>
+                <div class="d-flex align-items-center">
+                    <span class="current-price" id="displayPrice">RM {{ number_format($price, 2) }}</span>
+                    @if($onSale)
+                    <span class="old-price" id="displayOldPrice">RM {{ number_format($oldPrice, 2) }}</span>
+                    <span class="discount-badge">{{ $discountPercentage }}% OFF</span>
                     @endif
                 </div>
             </div>
 
-            <!-- Stock Status -->
+            {{-- Stock Status --}}
             <div class="mb-3">
-                @php
-                    $inStock = $product->product_type === 'simple' 
-                        ? $product->stock_quantity > 0 
-                        : $product->variants->sum('stock_quantity') > 0;
-                @endphp
-                
-                @if($product->type === 'service')
-                    <span class="stock-badge in-stock">
-                        <i class="fas fa-check-circle"></i> Available for Booking
-                    </span>
-                @elseif($inStock)
+                @if($inStock)
                     <span class="stock-badge in-stock">
                         <i class="fas fa-check-circle"></i> In Stock
                     </span>
@@ -386,8 +347,8 @@
                 @endif
             </div>
 
-            <!-- Attributes Badges -->
-            @if($product->type === 'product' && ($product->is_fragile || $product->is_biodegradable || $product->is_frozen || $product->has_expiry))
+            {{-- Attributes Badges --}}
+            @if($product->is_fragile || $product->is_biodegradable || $product->is_frozen || $product->has_expiry)
             <div class="attribute-badges">
                 @if($product->is_fragile)
                     <span class="attribute-badge"><i class="fas fa-exclamation-triangle text-warning"></i> Fragile</span>
@@ -404,131 +365,75 @@
             </div>
             @endif
 
-            @if($product->type === 'pharmacy' && $product->requires_prescription)
-            <div class="alert alert-warning border-0 d-flex align-items-center">
-                <i class="fas fa-prescription fa-2x me-3"></i>
-                <div>
-                    <strong>Prescription Required</strong>
-                    <p class="mb-0 small">This medication requires a valid prescription. Please upload your prescription during checkout.</p>
-                </div>
-            </div>
-            @endif
-
-            <!-- Variant Selector (for variable products) -->
-            @if($product->product_type === 'variable' && $variantTypes->count() > 0)
+            {{-- Variant Selector (for variable products) --}}
+            @if($product->product_type === 'variable')
             <div class="variant-section">
                 <input type="hidden" id="selectedVariantId" value="">
                 
-                @foreach($variantTypes as $variantType)
-                    @php
-                        $typeOptions = $product->variants->pluck('options')->flatten()->where('variant_type_id', $variantType->id)->unique('value');
-                    @endphp
-                    
-                    @if($typeOptions->count() > 0)
-                    <div class="variant-group">
-                        <label class="variant-label">
-                            {{ $variantType->name }}: 
-                            <span class="text-primary" id="selected_{{ $variantType->id }}">Please select</span>
-                        </label>
-                        <div class="variant-options">
-                            @foreach($typeOptions as $option)
-                            <button type="button" 
-                                    class="variant-option {{ $variantType->display_type === 'color_swatch' ? 'color-swatch' : '' }}"
-                                    data-type="{{ $variantType->id }}"
-                                    data-value="{{ $option->value }}"
-                                    @if($variantType->display_type === 'color_swatch' && $option->color_code)
-                                        style="background-color: {{ $option->color_code }};"
-                                        title="{{ $option->value }}"
-                                    @endif
-                                    onclick="selectVariantOption({{ $variantType->id }}, '{{ $option->value }}', this)">
-                                @if($variantType->display_type !== 'color_swatch')
-                                    {{ $option->value }}
+                @foreach($product->attributes as $attribute)
+                <div class="variant-group">
+                    <label class="variant-label">
+                        {{ $attribute->name }}: 
+                        <span class="text-primary" id="selected_{{ $attribute->id }}"></span>
+                    </label>
+                    <div class="variant-options">
+                        @foreach($attribute->options as $option)
+                        <button type="button" 
+                                class="variant-option {{ $attribute->display_type === 'color_swatch' ? 'color-swatch' : '' }}"
+                                data-attribute="{{ $attribute->id }}"
+                                data-option="{{ $option->id }}"
+                                data-value="{{ $option->value }}"
+                                @if($attribute->display_type === 'color_swatch' && $option->color_code)
+                                    style="background-color: {{ $option->color_code }};"
+                                    title="{{ $option->value }}"
                                 @endif
-                            </button>
-                            @endforeach
-                        </div>
+                                onclick="selectVariantOption({{ $attribute->id }}, {{ $option->id }}, '{{ $option->value }}', this)">
+                            @if($attribute->display_type !== 'color_swatch')
+                                {{ $option->value }}
+                            @endif
+                        </button>
+                        @endforeach
                     </div>
-                    @endif
+                </div>
                 @endforeach
                 
                 <div class="alert alert-info mt-3" id="variantAlert" style="display: none;">
-                    <i class="fas fa-info-circle me-2"></i> Please select all options
+                    Please select all options
                 </div>
             </div>
             @endif
 
-            <!-- Service Details -->
-            @if($product->type === 'service')
-            <div class="variant-section">
-                <h5 class="mb-3"><i class="fas fa-clock me-2"></i> Service Details</h5>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <strong>Duration:</strong> {{ $product->service_duration }} minutes
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Availability:</strong> {{ ucfirst($product->service_availability) }}
-                    </div>
-                    @if($product->service_days)
-                    <div class="col-12">
-                        <strong>Available Days:</strong> {{ implode(', ', $product->service_days) }}
-                    </div>
-                    @endif
-                    @if($product->service_start_time && $product->service_end_time)
-                    <div class="col-12">
-                        <strong>Service Hours:</strong> {{ $product->service_start_time }} - {{ $product->service_end_time }}
-                    </div>
-                    @endif
-                </div>
-            </div>
-            @endif
-
-            <!-- Quantity Selector -->
-            @if($product->type !== 'service')
+            {{-- Quantity Selector --}}
             <div class="quantity-selector">
-                <label class="fw-bold me-3">Quantity:</label>
+                <label class="fw-semibold me-3">Quantity:</label>
                 <button class="qty-btn" onclick="decrementQty()">−</button>
                 <input type="number" class="qty-input" id="quantity" value="1" min="1" max="99">
                 <button class="qty-btn" onclick="incrementQty()">+</button>
             </div>
-            @endif
 
-            <!-- Action Buttons -->
+            {{-- Action Buttons --}}
             <div class="action-buttons">
-                @if($product->type === 'service')
-                    <button class="btn-add-cart" onclick="bookService()">
-                        <i class="fas fa-calendar-check me-2"></i> Book Service
-                    </button>
-                @else
-                    <button class="btn-add-cart" onclick="addToCart()" {{ !$inStock ? 'disabled' : '' }}>
-                        <i class="fas fa-shopping-cart me-2"></i> Add to Cart
-                    </button>
-                    <button class="btn-buy-now" onclick="buyNow()" {{ !$inStock ? 'disabled' : '' }}>
-                        <i class="fas fa-bolt me-2"></i> Buy Now
-                    </button>
-                @endif
+                <button class="btn-add-cart" onclick="addToCart()" {{ !$inStock ? 'disabled' : '' }}>
+                    <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+                </button>
+                <button class="btn-buy-now" onclick="buyNow()" {{ !$inStock ? 'disabled' : '' }}>
+                    <i class="fas fa-bolt me-2"></i> Buy Now
+                </button>
                 <button class="btn-wishlist" onclick="toggleWishlist(this)">
                     <i class="far fa-heart"></i>
                 </button>
             </div>
 
-            <!-- Additional Info -->
+            {{-- Share & Additional Info --}}
             <div class="mt-4 pt-4 border-top">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <strong>SKU:</strong> <span class="text-muted">{{ $product->sku }}</span>
                     </div>
                     <div class="col-md-6">
-                        <strong>Store:</strong> 
-                        <a href="{{ route('store.profile', $product->store->slug) }}" class="text-primary">
-                            {{ $product->store->name }}
-                        </a>
-                    </div>
-                    @if($product->category)
-                    <div class="col-md-6">
                         <strong>Category:</strong> 
-                        <span class="text-muted">{{ $product->category->name }}</span>
+                        <span class="text-muted">{{ $product->category->name ?? 'Uncategorized' }}</span>
                     </div>
-                    @endif
                     @if($product->tags->count() > 0)
                     <div class="col-12">
                         <strong>Tags:</strong>
@@ -542,7 +447,7 @@
         </div>
     </div>
 
-    <!-- Product Details Tabs -->
+    {{-- Product Details Tabs --}}
     <div class="product-tabs">
         <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item">
@@ -557,24 +462,27 @@
                 </button>
             </li>
             @endif
-            @if($product->type === 'product')
             <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping">
                     Shipping Info
                 </button>
             </li>
-            @endif
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reviews">
+                    Reviews ({{ number_format($dummyReviewsCount) }})
+                </button>
+            </li>
         </ul>
 
         <div class="tab-content p-4">
-            <!-- Description Tab -->
+            {{-- Description Tab --}}
             <div class="tab-pane fade show active" id="description">
                 <div class="content-section">
                     {!! nl2br(e($product->description)) !!}
                 </div>
             </div>
 
-            <!-- Specifications Tab -->
+            {{-- Specifications Tab --}}
             @if($product->specifications->count() > 0)
             <div class="tab-pane fade" id="specifications">
                 @php
@@ -595,8 +503,7 @@
             </div>
             @endif
 
-            <!-- Shipping Tab -->
-            @if($product->type === 'product')
+            {{-- Shipping Tab --}}
             <div class="tab-pane fade" id="shipping">
                 <h5 class="mb-3">Shipping Information</h5>
                 <table class="specifications-table">
@@ -622,13 +529,17 @@
                     </tr>
                 </table>
             </div>
-            @endif
+
+            {{-- Reviews Tab --}}
+            <div class="tab-pane fade" id="reviews">
+                <p class="text-muted">Reviews feature coming soon...</p>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-// Variant data
+// Variant data from backend
 const variantsData = @json($variantData ?? []);
 const selectedOptions = {};
 
@@ -644,29 +555,29 @@ function changeMainImage(thumbnail) {
 // Quantity
 function incrementQty() {
     const input = document.getElementById('quantity');
-    if (input) input.value = parseInt(input.value) + 1;
+    input.value = parseInt(input.value) + 1;
 }
 
 function decrementQty() {
     const input = document.getElementById('quantity');
-    if (input && parseInt(input.value) > 1) {
+    if (parseInt(input.value) > 1) {
         input.value = parseInt(input.value) - 1;
     }
 }
 
 // Variant selection
-function selectVariantOption(typeId, value, button) {
-    selectedOptions[typeId] = value;
+function selectVariantOption(attributeId, optionId, value, button) {
+    // Update selected options
+    selectedOptions[attributeId] = optionId;
     
     // Update UI
-    document.querySelectorAll(`[data-type="${typeId}"]`).forEach(btn => {
+    document.querySelectorAll(`[data-attribute="${attributeId}"]`).forEach(btn => {
         btn.classList.remove('selected');
     });
     button.classList.add('selected');
     
     // Update label
-    const label = document.getElementById(`selected_${typeId}`);
-    if (label) label.textContent = value;
+    document.getElementById(`selected_${attributeId}`).textContent = value;
     
     // Find matching variant
     findMatchingVariant();
@@ -674,36 +585,37 @@ function selectVariantOption(typeId, value, button) {
 
 function findMatchingVariant() {
     const variant = variantsData.find(v => {
-        return Object.keys(selectedOptions).every(typeId => {
-            const option = v.options[typeId];
-            return option && option.value == selectedOptions[typeId];
+        return Object.keys(selectedOptions).every(attrId => {
+            return v.options[attrId] == selectedOptions[attrId];
         });
     });
     
-    const alert = document.getElementById('variantAlert');
-    
     if (variant) {
         document.getElementById('selectedVariantId').value = variant.id;
-        if (alert) alert.style.display = 'none';
+        document.getElementById('variantAlert').style.display = 'none';
         
         // Update price
         const price = variant.sale_price || variant.price;
-        const priceDisplay = document.getElementById('displayPrice');
-        if (priceDisplay) {
-            priceDisplay.textContent = `RM ${parseFloat(price).toFixed(2)}`;
+        document.getElementById('displayPrice').textContent = `RM ${parseFloat(price).toFixed(2)}`;
+        
+        if (variant.sale_price) {
+            document.getElementById('displayOldPrice').textContent = `RM ${parseFloat(variant.price).toFixed(2)}`;
         }
+        
+        // Update stock
+        // You can add stock update logic here
     } else {
-        if (alert) alert.style.display = 'block';
+        document.getElementById('variantAlert').style.display = 'block';
     }
 }
 
 // Cart actions
 function addToCart() {
     const productType = '{{ $product->product_type }}';
-    const quantity = document.getElementById('quantity')?.value || 1;
+    const quantity = document.getElementById('quantity').value;
     
     if (productType === 'variable') {
-        const variantId = document.getElementById('selectedVariantId')?.value;
+        const variantId = document.getElementById('selectedVariantId').value;
         if (!variantId) {
             alert('Please select all product options');
             return;
@@ -718,12 +630,8 @@ function addToCart() {
 
 function buyNow() {
     addToCart();
+    // Redirect to checkout
     // window.location.href = '/checkout';
-}
-
-function bookService() {
-    console.log('Book service:', { productId: {{ $product->id }} });
-    alert('Service booking! (Implement your booking logic)');
 }
 
 function toggleWishlist(button) {

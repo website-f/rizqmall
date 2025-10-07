@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Tag;
 use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -14,18 +15,21 @@ class TagSeeder extends Seeder
      */
     public function run(): void
     {
-        $initialTags = ['new', 'best-seller', 'clearance', 'local-stock'];
+        $tags = [
+            ['name' => 'New Arrival', 'slug' => 'new-arrival', 'color' => '#10b981'],
+            ['name' => 'Best Seller', 'slug' => 'best-seller', 'color' => '#f59e0b'],
+            ['name' => 'Featured', 'slug' => 'featured', 'color' => '#3b82f6'],
+            ['name' => 'Limited Edition', 'slug' => 'limited-edition', 'color' => '#8b5cf6'],
+            ['name' => 'Sale', 'slug' => 'sale', 'color' => '#ef4444'],
+            ['name' => 'Organic', 'slug' => 'organic', 'color' => '#22c55e'],
+            ['name' => 'Handmade', 'slug' => 'handmade', 'color' => '#f97316'],
+            ['name' => 'Local', 'slug' => 'local', 'color' => '#06b6d4'],
+            ['name' => 'Imported', 'slug' => 'imported', 'color' => '#6366f1'],
+            ['name' => 'Premium', 'slug' => 'premium', 'color' => '#d97706'],
+        ];
 
-        foreach ($initialTags as $tag) {
-            // Only insert if the tag doesn't already exist
-            if (!DB::table('tags')->where('name', $tag)->exists()) {
-                DB::table('tags')->insert([
-                    'name' => $tag,
-                    'slug' => Str::slug($tag),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+        foreach ($tags as $tag) {
+            Tag::create($tag);
         }
     }
 }

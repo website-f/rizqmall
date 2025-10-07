@@ -11,39 +11,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ProductVariant extends Model
 {
     protected $fillable = [
-        'name',
-        'sku',
-        'price',
-        'sale_price',
-        'stock_quantity',
-        'color_hex',
+        'product_id', 'sku', 'name', 'price', 'sale_price', 'cost_price',
+        'stock_quantity', 'weight', 'image', 'is_active'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
+        'weight' => 'decimal:2',
+        'is_active' => 'boolean',
     ];
 
-    /**
-     * Get the product that the variant belongs to.
-     */
-    public function product(): BelongsTo
+    public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Get the specific options (e.g., Color: Red, Size: Large) for the variant.
-     */
-    public function options(): HasMany
+    public function options()
     {
-        return $this->hasMany(VariantOptionValue::class, 'variant_id');
+        return $this->hasMany(VariantOption::class, 'variant_id');
     }
 
-    /**
-     * Get the images specific to this variant (e.g., the red shirt image).
-     */
-    public function images(): HasMany
+    public function images()
     {
         return $this->hasMany(ProductImage::class, 'variant_id');
     }

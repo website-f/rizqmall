@@ -5,193 +5,416 @@ namespace App\Http\Controllers;
 use App\Models\Tag;
 use App\Models\Store;
 use App\Models\Product;
-use App\Models\Category;
+use App\Models\ProductCategory;
+use App\Models\ProductVariant;
+use App\Models\VariantType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\ProductImage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Intervention\Image\Facades\Image;
 
 class ProductController extends Controller
 {
-      /**
-     * Show the "Add Product" form for the user's store.
+    /**
+     * Show product/service/pharmacy creation form
      */
-    public function showProductsForm($storeId, Request $request)
+    public function create(Request $request, $storeId)
     {
-        // 1️⃣ Make sure the store belongs to the current sandbox user
         $authUserId = session('auth_user_id');
         if (!$authUserId) {
-            return redirect()->route('store.setup')
-                             ->with('error', 'Session expired. Please set up your store again.');
+            return redirect()->route('store.select-category')
+                ->with('error', 'Session expired. Please login again.');
         }
 
         $store = Store::where('id', $storeId)
-                      ->where('auth_user_id', $authUserId)
-                      ->first();
+            ->where('auth_user_id', $authUserId)
+            ->firstOrFail();
 
-        if (!$store) {
-            return redirect()->route('store.setup')
-                             ->with('error', 'Store not found or unauthorized.');
+        $type = $request->query('type', 'product');
+        if (!in_array($type, ['product', 'service', 'pharmacy'])) {
+            $type = 'product';
         }
 
-        // 2️⃣ Load dropdown data
-        $categories = Category::select('id', 'name')->get();
-        $tags = Tag::select('id', 'name')->get();
+        // Get categories for this store type
+        $categories = ProductCategory::where('store_category_id', $store->store_category_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
 
-        return view('store.products', compact('categories', 'tags', 'store'));
+        $tags = Tag::all();
+        
+        // Get variant types for product variations
+        $variantTypes = VariantType::orderBy('sort_order')->get();
+
+        return view('store.products', compact('store', 'type', 'categories', 'tags', 'variantTypes'));
     }
 
-   public function store(Request $request, $storeId)
-   {
-       $authUserId = session('auth_user_id');
-       if (!$authUserId) {
-           return redirect()->route('store.setup')
-                            ->with('error', 'Session expired. Please log in from Sandbox again.');
-       }
-   
-       // 1️⃣ Validate and verify store ownership
-       $store = Store::where('id', $storeId)
-                     ->where('auth_user_id', $authUserId)
-                     ->first();
-   
-       if (!$store) {
-           return back()->with('error', 'Store not found or unauthorized.');
-       }
-   
-       // 2️⃣ Validation
-       $validated = $request->validate([
-           'name' => 'required|string|max:255',
-           'description' => 'required|string',
-           'category_id' => 'nullable|exists:categories,id',
-           'tags' => 'nullable|array',
-           'tags.*' => 'exists:tags,id',
-           'regular_price' => 'required|numeric|min:0.01',
-           'sale_price' => 'nullable|numeric|lt:regular_price|min:0',
-           'stock_quantity' => 'required|integer|min:0',
-   
-           // Attributes
-           'max_temperature' => 'nullable|string|max:50',
-           'expiry_date' => 'nullable|date',
-   
-           // Advanced IDs
-           'product_id_type' => 'nullable|string|max:50',
-           'product_id_value' => 'nullable|string|max:255',
-   
-           // Variants
-           'variants' => 'nullable|array',
-           'variants.*.name' => 'required_with:variants|string|max:255',
-           'variants.*.price' => 'nullable|numeric',
-           'variants.*.stock_quantity' => 'required_with:variants|integer|min:0',
-   
-           // Images
-           'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:50120',
-       ]);
-   
-       // 3️⃣ Create product
-       $product = new Product();
-       $product->store_id = $store->id;
-       $product->category_id = $validated['category_id'] ?? null;
-       $product->name = $validated['name'];
-       $product->slug = Str::slug($validated['name']);
-       $product->description = $validated['description'];
-       $product->regular_price = $validated['regular_price'];
-       $product->sale_price = $validated['sale_price'] ?? null;
-       $product->stock_quantity = $validated['stock_quantity'];
-       $product->status = 'published';
-   
-       // Attributes
-       $product->is_fragile = $request->has('is_fragile');
-       $product->is_biodegradable = $request->has('is_biodegradable');
-       $product->is_frozen = $request->has('is_frozen');
-       $product->max_temperature = $request->has('is_frozen') ? ($validated['max_temperature'] ?? null) : null;
-       $product->expiry_date = $request->has('has_expiry') ? ($validated['expiry_date'] ?? null) : null;
-   
-       // Advanced IDs
-       $product->product_id_type = $validated['product_id_type'] ?? null;
-       $product->product_id_value = $validated['product_id_value'] ?? null;
-   
-       $product->save();
-   
-       // 4️⃣ Attach tags
-       if (isset($validated['tags'])) {
-           $product->tags()->sync($validated['tags']);
-       }
-   
-       // 5️⃣ Variants
-       if (isset($validated['variants'])) {
-           foreach ($validated['variants'] as $variantData) {
-               $product->variants()->create([
-                   'name' => $variantData['name'],
-                   'price' => $variantData['price'],
-                   'stock_quantity' => $variantData['stock_quantity'],
-               ]);
-           }
-       }
-   
-       // 6️⃣ Handle Images
-       if ($request->hasFile('images')) {
-           foreach ($request->file('images') as $index => $file) {
-               // Store file in storage/app/public/products
-               $path = $file->store('products', 'public');
-   
-               ProductImage::create([
-                   'product_id' => $product->id,
-                   'variant_id' => null, // assign later if needed
-                   'path' => $path,
-                   'order' => $index,
-               ]);
-           }
-       }
-   
-       // 7️⃣ Redirect
-       return redirect()->route('rizqmall.home')
-                        ->with('success', 'Product "' . $product->name . '" published successfully!');
-   }
+    /**
+     * Store a new product/service/pharmacy item
+     */
+    public function store(Request $request, $storeId)
+    {
+        $authUserId = session('auth_user_id');
+        if (!$authUserId) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Session expired.');
+        }
 
+        $store = Store::where('id', $storeId)
+            ->where('auth_user_id', $authUserId)
+            ->firstOrFail();
+
+        // Base validation
+        $rules = [
+            'type' => 'required|in:product,service,pharmacy',
+            'name' => 'required|string|max:255',
+            'short_description' => 'nullable|string|max:500',
+            'description' => 'required|string',
+            'product_category_id' => 'nullable|exists:product_categories,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+            'product_type' => 'required|in:simple,variable',
+            'regular_price' => 'required|numeric|min:0.01',
+            'sale_price' => 'nullable|numeric|lt:regular_price|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'sku' => 'nullable|string|max:100|unique:products,sku',
+            'stock_quantity' => 'required_if:product_type,simple|nullable|integer|min:0',
+            'low_stock_threshold' => 'nullable|integer|min:0',
+            'allow_backorder' => 'nullable|boolean',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+        ];
+
+        // Type-specific validation
+        if ($request->type === 'product') {
+            $rules = array_merge($rules, [
+                'weight' => 'nullable|numeric|min:0',
+                'length' => 'nullable|numeric|min:0',
+                'width' => 'nullable|numeric|min:0',
+                'height' => 'nullable|numeric|min:0',
+                'is_fragile' => 'nullable|boolean',
+                'is_biodegradable' => 'nullable|boolean',
+                'is_frozen' => 'nullable|boolean',
+                'max_temperature' => 'nullable|string|max:50',
+                'has_expiry' => 'nullable|boolean',
+                'expiry_date' => 'nullable|date',
+            ]);
+        } elseif ($request->type === 'service') {
+            $rules = array_merge($rules, [
+                'service_duration' => 'required|integer|min:1',
+                'service_availability' => 'required|in:instant,scheduled,both',
+                'service_days' => 'nullable|array',
+                'service_start_time' => 'nullable|date_format:H:i',
+                'service_end_time' => 'nullable|date_format:H:i|after:service_start_time',
+            ]);
+        } elseif ($request->type === 'pharmacy') {
+            $rules = array_merge($rules, [
+                'requires_prescription' => 'nullable|boolean',
+                'drug_code' => 'nullable|string|max:100',
+                'manufacturer' => 'nullable|string|max:255',
+                'active_ingredient' => 'nullable|string|max:255',
+                'dosage_form' => 'nullable|string|max:100',
+                'strength' => 'nullable|string|max:100',
+                'has_expiry' => 'required|boolean',
+                'expiry_date' => 'required_if:has_expiry,1|nullable|date',
+            ]);
+        }
+
+        // Variant validation
+        if ($request->product_type === 'variable') {
+            $rules = array_merge($rules, [
+                'variants' => 'required|array|min:1',
+                'variants.*.name' => 'required|string',
+                'variants.*.sku' => 'required|string|unique:product_variants,sku',
+                'variants.*.price' => 'nullable|numeric|min:0',
+                'variants.*.sale_price' => 'nullable|numeric|min:0',
+                'variants.*.stock_quantity' => 'required|integer|min:0',
+                'variants.*.options' => 'required|array',
+                'variants.*.image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            ]);
+        }
+
+        $validated = $request->validate($rules);
+
+        DB::beginTransaction();
+        try {
+            // Create product
+            $product = new Product();
+            $product->store_id = $store->id;
+            $product->type = $validated['type'];
+            $product->product_category_id = $validated['product_category_id'] ?? null;
+            $product->name = $validated['name'];
+            $product->slug = $this->generateUniqueSlug($validated['name']);
+            $product->short_description = $validated['short_description'] ?? null;
+            $product->description = $validated['description'];
+            $product->product_type = $validated['product_type'];
+            $product->regular_price = $validated['regular_price'];
+            $product->sale_price = $validated['sale_price'] ?? null;
+            $product->cost_price = $validated['cost_price'] ?? null;
+            $product->sku = $validated['sku'] ?? $this->generateSKU();
+            $product->low_stock_threshold = $validated['low_stock_threshold'] ?? 5;
+            $product->allow_backorder = $request->has('allow_backorder');
+            $product->meta_title = $validated['meta_title'] ?? $validated['name'];
+            $product->meta_description = $validated['meta_description'] ?? null;
+
+            // Simple product inventory
+            if ($validated['product_type'] === 'simple') {
+                $product->stock_quantity = $validated['stock_quantity'] ?? 0;
+            }
+
+            // Type-specific fields
+            if ($validated['type'] === 'product') {
+                $product->weight = $validated['weight'] ?? null;
+                $product->length = $validated['length'] ?? null;
+                $product->width = $validated['width'] ?? null;
+                $product->height = $validated['height'] ?? null;
+                $product->is_fragile = $request->has('is_fragile');
+                $product->is_biodegradable = $request->has('is_biodegradable');
+                $product->is_frozen = $request->has('is_frozen');
+                $product->max_temperature = $request->has('is_frozen') ? ($validated['max_temperature'] ?? null) : null;
+                $product->has_expiry = $request->has('has_expiry');
+                $product->expiry_date = $request->has('has_expiry') ? ($validated['expiry_date'] ?? null) : null;
+            } elseif ($validated['type'] === 'service') {
+                $product->service_duration = $validated['service_duration'];
+                $product->service_availability = $validated['service_availability'];
+                $product->service_days = $validated['service_days'] ?? null;
+                $product->service_start_time = $validated['service_start_time'] ?? null;
+                $product->service_end_time = $validated['service_end_time'] ?? null;
+                $product->track_inventory = false; // Services don't track inventory
+            } elseif ($validated['type'] === 'pharmacy') {
+                $product->requires_prescription = $request->has('requires_prescription');
+                $product->drug_code = $validated['drug_code'] ?? null;
+                $product->manufacturer = $validated['manufacturer'] ?? null;
+                $product->active_ingredient = $validated['active_ingredient'] ?? null;
+                $product->dosage_form = $validated['dosage_form'] ?? null;
+                $product->strength = $validated['strength'] ?? null;
+                $product->has_expiry = $request->has('has_expiry');
+                $product->expiry_date = $validated['expiry_date'] ?? null;
+            }
+
+            $product->status = 'published';
+            $product->save();
+
+            // Attach tags
+            if (isset($validated['tags'])) {
+                $product->tags()->sync($validated['tags']);
+            }
+
+            // Create variants
+            if ($validated['product_type'] === 'variable' && isset($validated['variants'])) {
+                foreach ($validated['variants'] as $index => $variantData) {
+                    $variant = $product->variants()->create([
+                        'sku' => $variantData['sku'],
+                        'name' => $variantData['name'],
+                        'price' => $variantData['price'] ?? null,
+                        'sale_price' => $variantData['sale_price'] ?? null,
+                        'stock_quantity' => $variantData['stock_quantity'],
+                        'is_active' => true,
+                    ]);
+
+                    // Store variant options
+                    if (isset($variantData['options'])) {
+                        foreach ($variantData['options'] as $typeId => $optionData) {
+                            $variant->options()->create([
+                                'variant_type_id' => $typeId,
+                                'value' => $optionData['value'],
+                                'color_code' => $optionData['color_code'] ?? null,
+                                'sort_order' => $index,
+                            ]);
+                        }
+                    }
+
+                    // Handle variant image
+                    if ($request->hasFile("variants.$index.image")) {
+                        $image = $request->file("variants.$index.image");
+                        $path = $this->storeImage($image, 'products/variants');
+                        $variant->update(['image' => $path]);
+                    }
+                }
+            }
+
+            // Handle product images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $image) {
+                    $path = $this->storeImage($image, 'products');
+                    $thumbnailPath = $this->createThumbnail($image, 'products/thumbnails');
+
+                    $product->images()->create([
+                        'path' => $path,
+                        'thumbnail_path' => $thumbnailPath,
+                        'sort_order' => $index,
+                        'is_primary' => $index === 0,
+                    ]);
+                }
+            }
+
+            // Add specifications
+            if ($request->has('specifications')) {
+                foreach ($request->specifications as $index => $spec) {
+                    if (!empty($spec['key']) && !empty($spec['value'])) {
+                        $product->specifications()->create([
+                            'spec_key' => $spec['key'],
+                            'spec_value' => $spec['value'],
+                            'spec_group' => $spec['group'] ?? 'General',
+                            'sort_order' => $index,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('rizqmall.home')
+                ->with('success', ucfirst($validated['type']) . ' "' . $product->name . '" created successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Product creation failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Failed to create ' . $validated['type'] . '. Please try again.');
+        }
+    }
+
+    /**
+     * Show product details
+     */
     public function show($slug)
     {
-        // 1. Find the product by slug, eager loading relationships
-        $product = Product::with(['images', 'variants', 'category', 'tags'])
-                          ->where('slug', $slug)
-                          ->where('status', 'published') 
-                          ->firstOrFail(); 
+        $product = Product::with([
+            'images',
+            'variants.options.type',
+            'category',
+            'tags',
+            'specifications',
+            'store'
+        ])
+        ->where('slug', $slug)
+        ->where('status', 'published')
+        ->firstOrFail();
 
-        // 2. Prepare dynamic data for the view
-        
-        // Product pricing status
-        $onSale = !is_null($product->sale_price) && $product->sale_price < $product->regular_price;
-        $price = $onSale ? $product->sale_price : $product->regular_price;
-        $oldPrice = $onSale ? $product->regular_price : null;
-        $discountPercentage = $onSale ? round((($product->regular_price - $product->sale_price) / $product->regular_price) * 100) : null;
-        $inStock = $product->stock_quantity > 0;
-        
-        // Attributes
-        $attributes = [];
-        if ($product->is_fragile) $attributes[] = 'Fragile';
-        if ($product->is_biodegradable) $attributes[] = 'Biodegradable';
-        if ($product->is_frozen) $attributes[] = 'Frozen (Max Temp: ' . ($product->max_temperature ?? 'N/A') . ')';
-        if ($product->expiry_date) $attributes[] = 'Expiry Date: ' . Carbon::parse($product->expiry_date)->format('d M Y');
-        if ($product->product_id_type && $product->product_id_value) $attributes[] = $product->product_id_type . ': ' . $product->product_id_value;
+        // Prepare variant data for JavaScript
+        $variantData = [];
+        if ($product->product_type === 'variable') {
+            foreach ($product->variants as $variant) {
+                $options = [];
+                foreach ($variant->options as $option) {
+                    $options[$option->variant_type_id] = [
+                        'value' => $option->value,
+                        'color_code' => $option->color_code,
+                    ];
+                }
 
-        // Dummy data for reviews (as requested)
-        $dummyRating = 4.9; 
-        $dummyReviewsCount = 6548;
+                $variantData[] = [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'name' => $variant->name,
+                    'price' => $variant->price ?? $product->regular_price,
+                    'sale_price' => $variant->sale_price ?? $product->sale_price,
+                    'stock' => $variant->stock_quantity,
+                    'options' => $options,
+                    'image' => $variant->image,
+                ];
+            }
+        }
 
-        return view('store.viewProduct', compact('product', 'onSale', 'price', 'oldPrice', 'discountPercentage', 'inStock', 'attributes', 'dummyRating', 'dummyReviewsCount'));
+        // Get variant types used in this product
+        $variantTypes = [];
+        if ($product->product_type === 'variable') {
+            $typeIds = $product->variants()->with('options.type')
+                ->get()
+                ->pluck('options')
+                ->flatten()
+                ->pluck('variant_type_id')
+                ->unique();
+            
+            $variantTypes = VariantType::whereIn('id', $typeIds)->get();
+        }
+
+        return view('store.viewProduct', compact('product', 'variantData', 'variantTypes'));
     }
 
-
+    /**
+     * List all products
+     */
     public function index(Request $request)
     {
-        // Fetch all published products, eager load the first image (for display)
-        // and limit the results using pagination.
-        $products = Product::with('images')
-                           ->where('status', 'published')
-                           ->orderBy('created_at', 'desc')
-                           ->paginate(12); // Display 12 products per page, adjust as needed
+        $query = Product::with(['images' => fn($q) => $q->where('is_primary', true), 'store'])
+            ->where('status', 'published');
 
-        // For the template, we'll pass a dummy rating constant
-        $dummyRating = 5;
+        // Filter by type
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
 
-        return view('store.allProducts', compact('products', 'dummyRating'));
+        // Filter by category
+        if ($request->has('category')) {
+            $query->where('product_category_id', $request->category);
+        }
+
+        // Search
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Sort
+        $sort = $request->get('sort', 'latest');
+        switch ($sort) {
+            case 'price_low':
+                $query->orderBy('regular_price', 'asc');
+                break;
+            case 'price_high':
+                $query->orderBy('regular_price', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('sold_count', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+        }
+
+        $products = $query->paginate(12);
+
+        return view('store.allProducts', compact('products'));
+    }
+
+    /**
+     * Helper: Generate unique slug
+     */
+    private function generateUniqueSlug($name, $id = null)
+    {
+        $slug = Str::slug($name);
+        $count = Product::where('slug', 'like', $slug . '%')
+            ->when($id, fn($q) => $q->where('id', '!=', $id))
+            ->count();
+
+        return $count > 0 ? $slug . '-' . ($count + 1) : $slug;
+    }
+
+    /**
+     * Helper: Generate SKU
+     */
+    private function generateSKU()
+    {
+        return 'PRD-' . strtoupper(Str::random(8));
+    }
+
+    /**
+     * Helper: Store image
+     */
+    private function storeImage($file, $path)
+    {
+        return $file->store($path, 'public');
+    }
+
+    /**
+     * Helper: Create thumbnail
+     */
+    private function createThumbnail($file, $path)
+    {
+        // For now, store same image - you can use Intervention Image for proper thumbnails
+        return $file->store($path, 'public');
     }
 }
