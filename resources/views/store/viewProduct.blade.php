@@ -3,6 +3,9 @@
 @section('title', $product->name)
 
 @section('content')
+<!-- Hidden data attributes for JavaScript -->
+<div data-product-id="{{ $product->id }}" data-product-type="{{ $product->product_type }}" style="display:none;"></div>
+
 <style>
     .product-detail-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; }
     
@@ -198,6 +201,11 @@
         transform: translateY(-3px); 
         box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4); 
     }
+    .btn-add-cart:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
     .btn-buy-now {
         flex: 1;
         padding: 16px 32px;
@@ -213,6 +221,11 @@
     .btn-buy-now:hover { 
         transform: translateY(-3px); 
         box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); 
+    }
+    .btn-buy-now:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
     }
     .btn-wishlist {
         width: 56px;
@@ -243,30 +256,6 @@
     }
     .stock-badge.in-stock { background: #d1fae5; color: #065f46; }
     .stock-badge.out-stock { background: #fee2e2; color: #991b1b; }
-    
-    /* Tabs */
-    .product-tabs { margin-top: 60px; }
-    .nav-tabs { border-bottom: 3px solid #e5e7eb; }
-    .nav-tabs .nav-link {
-        border: none;
-        border-bottom: 3px solid transparent;
-        color: #6b7280;
-        font-weight: 700;
-        padding: 16px 24px;
-        transition: all 0.2s ease;
-    }
-    .nav-tabs .nav-link:hover { color: #3b82f6; }
-    .nav-tabs .nav-link.active {
-        color: #3b82f6;
-        border-bottom-color: #3b82f6;
-        background: transparent;
-    }
-    
-    .specifications-table { width: 100%; }
-    .specifications-table tr { border-bottom: 1px solid #e5e7eb; }
-    .specifications-table td { padding: 16px 0; }
-    .spec-label { font-weight: 700; width: 30%; color: #6b7280; }
-    .spec-value { color: #1f2937; }
     
     .attribute-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
     .attribute-badge {
@@ -347,7 +336,6 @@
                 <span class="text-muted ms-3">{{ number_format($product->sold_count) }} sold</span>
             </div>
 
-            <!-- Short Description -->
             @if($product->short_description)
             <p class="text-muted mb-3">{{ $product->short_description }}</p>
             @endif
@@ -543,23 +531,23 @@
     </div>
 
     <!-- Product Details Tabs -->
-    <div class="product-tabs">
-        <ul class="nav nav-tabs" role="tablist">
+    <div class="product-tabs" style="margin-top: 60px;">
+        <ul class="nav nav-tabs" role="tablist" style="border-bottom: 3px solid #e5e7eb;">
             <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#description">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#description" style="border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;">
                     Description
                 </button>
             </li>
             @if($product->specifications->count() > 0)
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#specifications">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#specifications" style="border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;">
                     Specifications
                 </button>
             </li>
             @endif
             @if($product->type === 'product')
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping" style="border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;">
                     Shipping Info
                 </button>
             </li>
@@ -582,12 +570,12 @@
                 @endphp
                 
                 @foreach($groupedSpecs as $group => $specs)
-                <h5 class="mb-3 mt-4 first:mt-0">{{ $group }}</h5>
-                <table class="specifications-table">
+                <h5 class="mb-3 mt-4">{{ $group }}</h5>
+                <table style="width: 100%;">
                     @foreach($specs as $spec)
-                    <tr>
-                        <td class="spec-label">{{ $spec->spec_key }}</td>
-                        <td class="spec-value">{{ $spec->spec_value }}</td>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">{{ $spec->spec_key }}</td>
+                        <td style="padding: 16px 0; color: #1f2937;">{{ $spec->spec_value }}</td>
                     </tr>
                     @endforeach
                 </table>
@@ -599,26 +587,26 @@
             @if($product->type === 'product')
             <div class="tab-pane fade" id="shipping">
                 <h5 class="mb-3">Shipping Information</h5>
-                <table class="specifications-table">
+                <table style="width: 100%;">
                     @if($product->weight)
-                    <tr>
-                        <td class="spec-label">Weight</td>
-                        <td class="spec-value">{{ $product->weight }} kg</td>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Weight</td>
+                        <td style="padding: 16px 0; color: #1f2937;">{{ $product->weight }} kg</td>
                     </tr>
                     @endif
                     @if($product->length && $product->width && $product->height)
-                    <tr>
-                        <td class="spec-label">Dimensions</td>
-                        <td class="spec-value">{{ $product->length }} × {{ $product->width }} × {{ $product->height }} cm</td>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Dimensions</td>
+                        <td style="padding: 16px 0; color: #1f2937;">{{ $product->length }} × {{ $product->width }} × {{ $product->height }} cm</td>
                     </tr>
                     @endif
-                    <tr>
-                        <td class="spec-label">Shipping</td>
-                        <td class="spec-value">Free shipping for orders above RM100</td>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Shipping</td>
+                        <td style="padding: 16px 0; color: #1f2937;">Free shipping for orders above RM100</td>
                     </tr>
                     <tr>
-                        <td class="spec-label">Delivery Time</td>
-                        <td class="spec-value">2-5 business days</td>
+                        <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Delivery Time</td>
+                        <td style="padding: 16px 0; color: #1f2937;">2-5 business days</td>
                     </tr>
                 </table>
             </div>
@@ -641,10 +629,12 @@ function changeMainImage(thumbnail) {
     thumbnail.classList.add('active');
 }
 
-// Quantity
+// Quantity controls
 function incrementQty() {
     const input = document.getElementById('quantity');
-    if (input) input.value = parseInt(input.value) + 1;
+    if (input && parseInt(input.value) < 99) {
+        input.value = parseInt(input.value) + 1;
+    }
 }
 
 function decrementQty() {
@@ -658,17 +648,14 @@ function decrementQty() {
 function selectVariantOption(typeId, value, button) {
     selectedOptions[typeId] = value;
     
-    // Update UI
     document.querySelectorAll(`[data-type="${typeId}"]`).forEach(btn => {
         btn.classList.remove('selected');
     });
     button.classList.add('selected');
     
-    // Update label
     const label = document.getElementById(`selected_${typeId}`);
     if (label) label.textContent = value;
     
-    // Find matching variant
     findMatchingVariant();
 }
 
@@ -686,7 +673,6 @@ function findMatchingVariant() {
         document.getElementById('selectedVariantId').value = variant.id;
         if (alert) alert.style.display = 'none';
         
-        // Update price
         const price = variant.sale_price || variant.price;
         const priceDisplay = document.getElementById('displayPrice');
         if (priceDisplay) {
@@ -698,32 +684,45 @@ function findMatchingVariant() {
 }
 
 // Cart actions
-function addToCart() {
-    const productType = '{{ $product->product_type }}';
-    const quantity = document.getElementById('quantity')?.value || 1;
+async function addToCart() {
+    const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
+    const productType = document.querySelector('[data-product-type]')?.dataset.productType;
+    const quantity = parseInt(document.getElementById('quantity')?.value || 1);
+    
+    if (!productId) {
+        CartManager.showErrorModal('Product not found');
+        return false;
+    }
+
+    let variantId = null;
     
     if (productType === 'variable') {
-        const variantId = document.getElementById('selectedVariantId')?.value;
+        variantId = document.getElementById('selectedVariantId')?.value;
         if (!variantId) {
-            alert('Please select all product options');
-            return;
+            CartManager.showErrorModal('Please select all product options');
+            return false;
         }
-        console.log('Add to cart:', { productId: {{ $product->id }}, variantId, quantity });
-    } else {
-        console.log('Add to cart:', { productId: {{ $product->id }}, quantity });
     }
-    
-    alert('Added to cart! (Implement your cart logic)');
+
+    const success = await CartManager.addToCart(productId, variantId, quantity);
+    if (success) {
+        const qtyInput = document.getElementById('quantity');
+        if (qtyInput) qtyInput.value = 1;
+    }
+    return success;
 }
 
-function buyNow() {
-    addToCart();
-    // window.location.href = '/checkout';
+async function buyNow() {
+    const success = await addToCart();
+    if (success) {
+        setTimeout(() => {
+            window.location.href = '/cart';
+        }, 2100);
+    }
 }
 
 function bookService() {
-    console.log('Book service:', { productId: {{ $product->id }} });
-    alert('Service booking! (Implement your booking logic)');
+    CartManager.showErrorModal('Service booking coming soon!');
 }
 
 function toggleWishlist(button) {
@@ -732,6 +731,9 @@ function toggleWishlist(button) {
     icon.classList.toggle('far');
     icon.classList.toggle('fas');
 }
+
+
+
 </script>
 
 @endsection

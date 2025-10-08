@@ -1,9 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,15 @@ Route::prefix('store/{store}')->group(function () {
     
     // Delete
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+});
+
+Route::prefix('cart')->group(function () {
+    Route::get('/', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/add', [CartController::class, 'add'])->name('cart.add');
+    Route::put('/update/{cartItem}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/remove/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('/clear', [CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/count', [CartController::class, 'count'])->name('cart.count');
 });
 
 /*

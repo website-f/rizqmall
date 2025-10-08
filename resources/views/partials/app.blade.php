@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="csrf-token" content="{{ csrf_token() }}">
 
 
     <!-- ===============================================-->
@@ -44,6 +45,360 @@
     <link href="{{asset('assets/css/theme.min.css')}}" type="text/css" rel="stylesheet" id="style-default">
     <link href="{{asset('assets/css/user-rtl.min.css')}}" type="text/css" rel="stylesheet" id="user-style-rtl">
     <link href="{{asset('assets/css/user.min.css')}}" type="text/css" rel="stylesheet" id="user-style-default">
+    <style>
+      /* Cart Modal Styles */
+.cart-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.cart-modal.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.cart-modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    min-width: 320px;
+}
+
+.success-modal .success-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.5s ease;
+}
+
+.success-modal .success-icon i {
+    font-size: 40px;
+    color: white;
+}
+
+.error-modal .error-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.5s ease;
+}
+
+.error-modal .error-icon i {
+    font-size: 40px;
+    color: white;
+}
+
+.cart-modal h4 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #1f2937;
+}
+
+.cart-modal p {
+    font-size: 16px;
+    color: #6b7280;
+    margin-bottom: 0;
+}
+
+@keyframes scaleIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Cart Count Badge */
+.cart-count-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Cart Page Styles */
+.cart-container {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.cart-header {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #e5e7eb;
+}
+
+.cart-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.cart-items {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.cart-item {
+    display: flex;
+    gap: 20px;
+    padding: 24px 0;
+    border-bottom: 2px solid #f3f4f6;
+    position: relative;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid #e5e7eb;
+}
+
+.cart-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cart-item-details {
+    flex: 1;
+}
+
+.cart-item-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.cart-item-variant {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.cart-item-store {
+    font-size: 14px;
+    color: #3b82f6;
+    margin-bottom: 12px;
+}
+
+.cart-item-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: #3b82f6;
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.cart-qty-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 10px;
+}
+
+.cart-qty-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.cart-qty-btn:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.cart-qty-value {
+    min-width: 40px;
+    text-align: center;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.cart-remove-btn {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.cart-remove-btn:hover {
+    background: #fee2e2;
+}
+
+.cart-summary {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 20px;
+    padding: 32px;
+    position: sticky;
+    top: 20px;
+}
+
+.cart-summary h3 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1f2937;
+    margin-bottom: 24px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.summary-row.total {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1f2937;
+    padding-top: 16px;
+    border-top: 2px solid #3b82f6;
+    margin-top: 16px;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: all 0.3s;
+}
+
+.checkout-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-cart-icon {
+    font-size: 80px;
+    color: #d1d5db;
+    margin-bottom: 24px;
+}
+
+.empty-cart h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+.empty-cart p {
+    font-size: 16px;
+    color: #6b7280;
+    margin-bottom: 32px;
+}
+
+.continue-shopping-btn {
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.continue-shopping-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .cart-item {
+        flex-direction: column;
+    }
+    
+    .cart-item-image {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .cart-item-actions {
+        justify-content: space-between;
+    }
+}
+    </style>
     <script>
       var phoenixIsRTL = window.config.config.phoenixIsRTL;
       if (phoenixIsRTL) {
@@ -92,7 +447,7 @@
                         <label class="mb-0 theme-control-toggle-label theme-control-toggle-dark" for="themeControlToggle" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Switch theme" style="height:32px;width:32px;"><span class="icon" data-feather="sun"></span></label>
                       </div>
                     </li>
-                    <li class="nav-item"><a class="nav-link px-2 icon-indicator icon-indicator-primary" href="apps/e-commerce/landing/cart.html" role="button"><span class="text-body-tertiary" data-feather="shopping-cart" style="height:20px;width:20px;"></span><span class="icon-indicator-number">3</span></a></li>
+                    <li class="nav-item"><a class="nav-link px-2 icon-indicator icon-indicator-primary" href="/cart" role="button"><span class="text-body-tertiary" data-feather="shopping-cart" style="height:20px;width:20px;"></span><span class="icon-indicator-number">3</span></a></li>
                    
                     <li class="nav-item dropdown"><a class="nav-link px-2" id="navbarDropdownUser" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false"><span class="text-body-tertiary" data-feather="user" style="height:20px;width:20px;"></span></a>
                       <div class="dropdown-menu dropdown-menu-end navbar-dropdown-caret py-0 dropdown-profile shadow border mt-2" aria-labelledby="navbarDropdownUser">
@@ -344,7 +699,201 @@
     <script src="{{asset('vendors/glightbox/glightbox.min.js')}}"> </script>
     <script src="{{asset('assets/js/phoenix.js')}}"></script>
      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+        const CartManager = {
+            async addToCart(productId, variantId = null, quantity = 1) {
+                try {
+                    const response = await fetch('/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            product_id: productId,
+                            variant_id: variantId,
+                            quantity: quantity
+                        })
+                    });
 
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updateCartCount(data.cart_count);
+                        this.showSuccessModal(data.message);
+                        return true;
+                    } else {
+                        this.showErrorModal(data.message);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Error adding to cart:', error);
+                    this.showErrorModal('Failed to add item to cart');
+                    return false;
+                }
+            },
+
+            async updateQuantity(cartItemId, quantity) {
+                try {
+                    const response = await fetch(`/cart/update/${cartItemId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ quantity })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updateCartCount(data.cart_count);
+                        return data;
+                    } else {
+                        this.showErrorModal(data.message);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Error updating cart:', error);
+                    this.showErrorModal('Failed to update cart');
+                    return null;
+                }
+            },
+
+            async removeItem(cartItemId) {
+                try {
+                    const response = await fetch(`/cart/remove/${cartItemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updateCartCount(data.cart_count);
+                        return data;
+                    } else {
+                        this.showErrorModal(data.message);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Error removing item:', error);
+                    this.showErrorModal('Failed to remove item');
+                    return null;
+                }
+            },
+
+            updateCartCount(count) {
+                const cartBadge = document.getElementById('cart-count-badge');
+                if (cartBadge) {
+                    cartBadge.textContent = count;
+                    cartBadge.style.display = count > 0 ? 'flex' : 'none';
+                }
+            },
+
+            async loadCartCount() {
+                try {
+                    const response = await fetch('/cart/count');
+                    const data = await response.json();
+                    this.updateCartCount(data.count);
+                } catch (error) {
+                    console.error('Error loading cart count:', error);
+                }
+            },
+
+            showSuccessModal(message) {
+                const modal = document.createElement('div');
+                modal.className = 'cart-modal success-modal';
+                modal.innerHTML = `
+                    <div class="cart-modal-content">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h4>Success!</h4>
+                        <p>${message}</p>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                setTimeout(() => modal.classList.add('show'), 10);
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.remove(), 300);
+                }, 2000);
+            },
+
+            showErrorModal(message) {
+                const modal = document.createElement('div');
+                modal.className = 'cart-modal error-modal';
+                modal.innerHTML = `
+                    <div class="cart-modal-content">
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <h4>Error</h4>
+                        <p>${message}</p>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                setTimeout(() => modal.classList.add('show'), 10);
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.remove(), 300);
+                }, 3000);
+            }
+        };
+
+        // Load cart count on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            CartManager.loadCartCount();
+        });
+
+        // Product page functions
+        async function addToCart() {
+            const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
+            const productType = document.querySelector('[data-product-type]')?.dataset.productType;
+            const quantity = parseInt(document.getElementById('quantity')?.value || 1);
+            
+            if (!productId) {
+                CartManager.showErrorModal('Product not found');
+                return false;
+            }
+
+            let variantId = null;
+            
+            if (productType === 'variable') {
+                variantId = document.getElementById('selectedVariantId')?.value;
+                if (!variantId) {
+                    CartManager.showErrorModal('Please select all product options');
+                    return false;
+                }
+            }
+
+            const success = await CartManager.addToCart(productId, variantId, quantity);
+            if (success) {
+                const qtyInput = document.getElementById('quantity');
+                if (qtyInput) qtyInput.value = 1;
+            }
+            return success;
+        }
+
+        async function buyNow() {
+            const success = await addToCart();
+            if (success) {
+                setTimeout(() => {
+                    window.location.href = '/cart';
+                }, 2100);
+            }
+        }
+
+        function bookService() {
+            CartManager.showErrorModal('Service booking coming soon!');
+        }
+    </script>
     @stack('scripts')
 
   </body>
