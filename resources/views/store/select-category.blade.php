@@ -153,7 +153,7 @@
     <div class="category-grid">
         @foreach($categories as $category)
             @php
-                $isAvailable = in_array($category->slug, ['marketplace', 'services', 'pharmacy']);
+                $isAvailable = in_array($category->slug, ['marketplace', 'services', 'pharmacy', 'premises', 'hardware']);
             @endphp
             
             <div class="category-card {{ !$isAvailable ? 'disabled' : '' }}"

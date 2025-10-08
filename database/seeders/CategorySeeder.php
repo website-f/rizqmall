@@ -53,7 +53,7 @@ class CategorySeeder extends Seeder
                 'slug' => 'premises',
                 'icon' => 'uil uil-estate',
                 'description' => 'Commercial and residential properties',
-                'is_active' => false,
+                'is_active' => true,
                 'sort_order' => 5,
             ],
             [
@@ -77,7 +77,7 @@ class CategorySeeder extends Seeder
                 'slug' => 'hardware',
                 'icon' => 'uil uil-wrench',
                 'description' => 'Tools and hardware supplies',
-                'is_active' => false,
+                'is_active' => true,
                 'sort_order' => 8,
             ],
             [
