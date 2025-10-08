@@ -18,7 +18,7 @@
                 </a>
                 
                 @foreach($storeCategories as $category)
-                  @if(in_array($category->slug, ['marketplace', 'services', 'pharmacy']))
+                  @if(in_array($category->slug, ['marketplace', 'services', 'pharmacy', 'premises', 'hardware']))
                     <a class="icon-nav-item" href="{{ route('products.index', ['type' => $category->slug]) }}">
                       <div class="icon-container mb-2" data-bs-theme="light">
                         <span class="fs-4 {{ $category->icon }}"></span>
@@ -364,7 +364,7 @@
                         <h1 class="display-3 fw-semibold mb-4">
                             Create your <span class="text-primary fw-bolder">store </span>today!
                         </h1>
-                        <a class="btn btn-lg btn-primary px-7" href="{{ route('store.select-category') }}">
+                        <a class="btn btn-lg btn-primary px-7" href="https://rm.sandboxmalaysia.com/register/">
                             Get Started<span class="fas fa-chevron-right ms-2 fs-9"></span>
                         </a>
                     </div>
