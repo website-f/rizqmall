@@ -378,16 +378,29 @@
             @if($product->type === 'product' && ($product->is_fragile || $product->is_biodegradable || $product->is_frozen || $product->has_expiry))
             <div class="attribute-badges">
                 @if($product->is_fragile)
-                    <span class="attribute-badge"><i class="fas fa-exclamation-triangle text-warning"></i> Fragile</span>
+                    <span class="attribute-badge">
+                        <i class="fas fa-exclamation-triangle text-warning"></i> Fragile
+                    </span>
                 @endif
+                
                 @if($product->is_biodegradable)
-                    <span class="attribute-badge"><i class="fas fa-leaf text-success"></i> Biodegradable</span>
+                    <span class="attribute-badge">
+                        <i class="fas fa-leaf text-success"></i> Biodegradable
+                    </span>
                 @endif
+                
                 @if($product->is_frozen)
-                    <span class="attribute-badge"><i class="fas fa-snowflake text-info"></i> Frozen ({{ $product->max_temperature }})</span>
+                    <span class="attribute-badge">
+                        <i class="fas fa-snowflake text-info"></i> 
+                        Frozen {{ $product->max_temperature ? '(' . $product->max_temperature . ')' : '' }}
+                    </span>
                 @endif
+                
                 @if($product->has_expiry)
-                    <span class="attribute-badge"><i class="fas fa-calendar-times text-danger"></i> Expiry: {{ $product->expiry_date->format('M d, Y') }}</span>
+                    <span class="attribute-badge">
+                        <i class="fas fa-calendar-times text-danger"></i> 
+                        Expiry: {{ $product->expiry_date ? $product->expiry_date->format('M d, Y') : 'No expiry date' }}
+                    </span>
                 @endif
             </div>
             @endif
