@@ -4,29 +4,48 @@ namespace App\Http\Controllers;
 
 use App\Models\Store;
 use App\Models\StoreCategory;
+use App\Services\SubscriptionService;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class StoreController extends Controller
 {
+    protected $subscriptionService;
+
+    public function __construct(SubscriptionService $subscriptionService)
+    {
+        $this->subscriptionService = $subscriptionService;
+    }
+
     /**
      * Show store category selection (first step)
      */
-    public function showCategorySelection(Request $request)
+    public function showCategorySelection()
     {
-        $authUserId = $request->query('user_id');
-        session(['auth_user_id' => $authUserId]);
+        $user = Auth::user();
 
-        if (!$authUserId) {
-            abort(403, 'Unauthorized: user_id missing.');
+        if (!$user) {
+            return redirect()->route('auth.redirect')
+                ->with('error', 'Please login to create a store.');
+        }
+
+        // Check if user is a vendor
+        if (!$user->is_vendor) {
+            abort(403, 'Only vendor accounts can create stores.');
         }
 
         // Check if user already has a store
-        $existingStore = Store::where('auth_user_id', $authUserId)->first();
-        if ($existingStore) {
-            return redirect()->route('rizqmall.home')
+        if ($user->hasStore()) {
+            return redirect()->route('vendor.dashboard')
                 ->with('info', 'You already have a store.');
+        }
+
+        // Check subscription status
+        if (!$user->has_active_subscription) {
+            return redirect()->route('subscription.expired')
+                ->with('error', 'Please activate your subscription to create a store.');
         }
 
         // Get active store categories
@@ -34,7 +53,7 @@ class StoreController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('store.select-category', compact('categories'));
+        return view('store.select-category', compact('categories', 'user'));
     }
 
     /**
@@ -42,10 +61,11 @@ class StoreController extends Controller
      */
     public function showSetupForm(Request $request)
     {
-        $authUserId = session('auth_user_id');
-        if (!$authUserId) {
-            return redirect()->route('store.select-category')
-                ->with('error', 'Session expired. Please start again.');
+        $user = Auth::user();
+
+        if (!$user || !$user->is_vendor) {
+            return redirect()->route('auth.redirect')
+                ->with('error', 'Please login as a vendor.');
         }
 
         $categoryId = $request->query('category');
@@ -57,12 +77,14 @@ class StoreController extends Controller
         $category = StoreCategory::findOrFail($categoryId);
         session(['selected_store_category' => $categoryId]);
 
+        // Pre-fill with user data
         $prefill = [
-            'email' => $request->query('email'),
-            'name'  => $request->query('name'),
+            'email' => $user->email,
+            'name' => $user->name,
+            'phone' => $user->phone,
         ];
 
-        return view('store.setup', compact('category', 'prefill'));
+        return view('store.setup', compact('category', 'prefill', 'user'));
     }
 
     /**
@@ -70,12 +92,23 @@ class StoreController extends Controller
      */
     public function store(Request $request)
     {
-        $authUserId = session('auth_user_id');
+        $user = Auth::user();
         $storeCategoryId = session('selected_store_category');
 
-        if (!$authUserId || !$storeCategoryId) {
+        if (!$user || !$user->is_vendor) {
+            return redirect()->route('auth.redirect')
+                ->with('error', 'Authentication required.');
+        }
+
+        if (!$storeCategoryId) {
             return redirect()->route('store.select-category')
-                ->with('error', 'Session expired. Please start again.');
+                ->with('error', 'Please start the setup process again.');
+        }
+
+        // Check if user already has a store
+        if ($user->hasStore()) {
+            return redirect()->route('vendor.dashboard')
+                ->with('info', 'You already have a store.');
         }
 
         // Validation
@@ -89,6 +122,8 @@ class StoreController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'image' => 'nullable|string',
             'banner' => 'nullable|string',
+            'business_registration_no' => 'nullable|string|max:100',
+            'tax_id' => 'nullable|string|max:100',
         ]);
 
         // Generate unique slug
@@ -124,7 +159,7 @@ class StoreController extends Controller
 
         // Create Store
         $store = Store::create([
-            'auth_user_id' => $authUserId,
+            'user_id' => $user->id,
             'store_category_id' => $storeCategoryId,
             'name' => $request->name,
             'phone' => $request->phone,
@@ -136,25 +171,28 @@ class StoreController extends Controller
             'longitude' => $request->longitude,
             'image' => $logoPath,
             'banner' => $bannerPath,
+            'business_registration_no' => $request->business_registration_no,
+            'tax_id' => $request->tax_id,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        // Clear session
+        session()->forget('selected_store_category');
+
+        // Notify subscription system
+        $this->subscriptionService->notifyEvent('store_created', [
+            'user_id' => $user->subscription_user_id,
+            'store_id' => $store->id,
+            'store_name' => $store->name,
         ]);
 
         // Get store category to determine redirect
         $category = StoreCategory::find($storeCategoryId);
         
-        // Redirect based on category
-        if ($category->slug === 'marketplace') {
-            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'product'])
-                ->with('success', 'Store created! Now add your first product.');
-        } elseif ($category->slug === 'services') {
-            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'service'])
-                ->with('success', 'Store created! Now add your first service.');
-        } elseif ($category->slug === 'pharmacy') {
-            return redirect()->route('products.create', ['store' => $store->id, 'type' => 'pharmacy'])
-                ->with('success', 'Store created! Now add your first pharmacy item.');
-        }
-
-        return redirect()->route('rizqmall.home')
-            ->with('success', 'Store created successfully!');
+        // Redirect to add first product
+        return redirect()->route('vendor.products.create')
+            ->with('success', 'Store created successfully! Now add your first product.');
     }
 
     /**
@@ -162,7 +200,7 @@ class StoreController extends Controller
      */
     public function home()
     {
-        // Get ALL store categories (both active and inactive)
+        // Get ALL store categories (both active and inactive for display)
         $storeCategories = StoreCategory::orderBy('sort_order')->get();
 
         // Get featured products from all categories
@@ -185,6 +223,7 @@ class StoreController extends Controller
                 $query->where('status', 'published');
             }])
             ->where('is_active', true)
+            ->where('status', 'active')
             ->orderBy('name')
             ->paginate(12);
 
@@ -196,13 +235,21 @@ class StoreController extends Controller
      */
     public function showProfile(Store $store)
     {
+        // Check if store is active
+        if (!$store->is_active || $store->status !== 'active') {
+            abort(404, 'Store not found or inactive.');
+        }
+
         $products = $store->products()
             ->with(['images' => fn($q) => $q->where('is_primary', true), 'category'])
             ->where('status', 'published')
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
-        return view('store.store-view', compact('store', 'products'));
+        // Check if current user is the owner
+        $isOwner = Auth::check() && Auth::id() === $store->user_id;
+
+        return view('store.store-view', compact('store', 'products', 'isOwner'));
     }
 
     /**
@@ -210,7 +257,9 @@ class StoreController extends Controller
      */
     public function changeBanner(Request $request, Store $store)
     {
-        if (session('auth_user_id') != $store->auth_user_id) {
+        $user = Auth::user();
+
+        if (!$user || $user->id !== $store->user_id) {
             abort(403, 'Unauthorized');
         }
 

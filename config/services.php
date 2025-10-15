@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Subscription System (Microservice Integration)
+    |--------------------------------------------------------------------------
+    */
+
+    'subscription' => [
+        'base_url' => env('SUBSCRIPTION_BASE_URL', 'https://rm.sandboxmalaysia.com'),
+        'api_key' => env('SUBSCRIPTION_API_KEY'),
+        'timeout' => env('SUBSCRIPTION_TIMEOUT', 10),
+        
+        // Webhook settings
+        'webhook_secret' => env('SUBSCRIPTION_WEBHOOK_SECRET'),
+        
+        // SSO settings
+        'sso_enabled' => env('SUBSCRIPTION_SSO_ENABLED', true),
+        'redirect_url' => env('SUBSCRIPTION_REDIRECT_URL'),
+    ],
+
 ];

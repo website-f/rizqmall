@@ -16,15 +16,16 @@ class CartController extends Controller
      */
     private function getCart()
     {
-        $authUserId = session('auth_user_id');
-        $sessionId = session()->getId();
-
-        if ($authUserId) {
-            $cart = Cart::firstOrCreate(['auth_user_id' => $authUserId]);
+        // Check if user is authenticated
+        if (Auth::check()) {
+            $user = Auth::user();
+            $cart = Cart::firstOrCreate(['user_id' => $user->id]);
         } else {
+            // Guest user - use session
+            $sessionId = session()->getId();
             $cart = Cart::firstOrCreate(['session_id' => $sessionId]);
         }
-
+    
         return $cart;
     }
 

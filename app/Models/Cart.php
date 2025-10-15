@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Cart extends Model
 {
     protected $fillable = [
-        'auth_user_id',
+        'user_id',
         'session_id',
-    ];
+        // ... other fields
+    ]
 
     /**
      * Get the cart items

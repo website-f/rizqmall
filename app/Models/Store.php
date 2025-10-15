@@ -31,6 +31,17 @@ class Store extends Model
         });
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    
+    // Add new relationships
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function category()
     {
         return $this->belongsTo(StoreCategory::class, 'store_category_id');
