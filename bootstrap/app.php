@@ -20,21 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.session' => \App\Http\Middleware\ValidateSession::class,
         ]);
 
-        // Global middleware (applied to all routes)
-        $middleware->append([
-            \App\Http\Middleware\TrustProxies::class,
-            \App\Http\Middleware\HandleCors::class,
-        ]);
-
-        // Web middleware group
-        $middleware->web(append: [
-            \App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        ]);
+        
 
         // API middleware group
         $middleware->api(prepend: [

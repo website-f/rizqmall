@@ -51,7 +51,7 @@ return [
         
         // SSO settings
         'sso_enabled' => env('SUBSCRIPTION_SSO_ENABLED', true),
-        'redirect_url' => env('SUBSCRIPTION_REDIRECT_URL'),
+        'sso_secret' => env('SUBSCRIPTION_SSO_SECRET'),
     ],
 
 ];

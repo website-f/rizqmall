@@ -30,15 +30,20 @@ class AuthController extends Controller
         $request->validate([
             'user_id' => 'required|integer',
             'email' => 'required|email',
-            'token' => 'nullable|string', // Optional: access token from subscription system
+            'name' => 'required|string',
+            'token' => 'nullable|string',
+            'customer' => 'nullable|string', // 'true' for customer-only access
         ]);
 
         $subscriptionUserId = $request->user_id;
         $email = $request->email;
+        $name = $request->name;
+        $isCustomerOnly = $request->customer === 'true';
 
         Log::info('SSO Login attempt', [
             'user_id' => $subscriptionUserId,
             'email' => $email,
+            'customer_only' => $isCustomerOnly,
             'ip' => $request->ip(),
         ]);
 
@@ -51,28 +56,35 @@ class AuthController extends Controller
                     'user_id' => $subscriptionUserId
                 ]);
                 
-                return redirect()->route('auth.error')
+                return redirect()->route('rizqmall.home')
                     ->with('error', 'Unable to authenticate. Please try again or contact support.');
             }
 
-            // Step 2: Verify subscription status
+            // Step 2: Verify subscription status (only for vendors)
             $subscriptionStatus = $this->subscriptionService->verifySubscription($subscriptionUserId);
             
-            if (!$subscriptionStatus || $subscriptionStatus['status'] !== 'active') {
-                Log::warning('User subscription not active', [
-                    'user_id' => $subscriptionUserId,
-                    'status' => $subscriptionStatus['status'] ?? 'unknown'
+            // Update local subscription data
+            if ($subscriptionStatus) {
+                $userData->update([
+                    'subscription_status' => $subscriptionStatus['status'],
+                    'subscription_expires_at' => $subscriptionStatus['expires_at'],
                 ]);
+            }
 
-                // Allow customers to browse even without active subscription
-                // Only vendors need active subscription
-                if ($userData->user_type === 'vendor') {
+            // Step 3: Check if vendor subscription is required and active
+            if ($userData->user_type === 'vendor') {
+                if (!$subscriptionStatus || $subscriptionStatus['status'] !== 'active') {
+                    Log::warning('Vendor subscription not active', [
+                        'user_id' => $subscriptionUserId,
+                        'status' => $subscriptionStatus['status'] ?? 'unknown'
+                    ]);
+
                     return redirect()->route('subscription.expired')
-                        ->with('error', 'Your subscription is not active. Please renew your subscription.');
+                        ->with('error', 'Your vendor subscription is not active. Please renew your subscription.');
                 }
             }
 
-            // Step 3: Create or update user session
+            // Step 4: Create or update user session
             $sessionId = Str::uuid();
             UserSession::updateOrCreate(
                 ['user_id' => $userData->id],
@@ -86,13 +98,16 @@ class AuthController extends Controller
                 ]
             );
 
-            // Step 4: Log the user in using Laravel Auth
+            // Step 5: Log the user in using Laravel Auth
             Auth::login($userData, true); // true = remember me
             
             // Update last login timestamp
-            $userData->updateLastLogin($request->ip());
+            $userData->update([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+            ]);
 
-            // Step 5: Store additional session data
+            // Step 6: Store additional session data
             session([
                 'subscription_user_id' => $subscriptionUserId,
                 'session_id' => $sessionId,
@@ -106,7 +121,7 @@ class AuthController extends Controller
                 'user_type' => $userData->user_type,
             ]);
 
-            // Step 6: Redirect based on user type and status
+            // Step 7: Redirect based on user type and status
             return $this->redirectAfterLogin($userData);
 
         } catch (\Exception $e) {
@@ -116,7 +131,7 @@ class AuthController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->route('auth.error')
+            return redirect()->route('rizqmall.home')
                 ->with('error', 'An error occurred during authentication. Please try again.');
         }
     }
@@ -126,16 +141,10 @@ class AuthController extends Controller
      */
     private function redirectAfterLogin(User $user)
     {
-        // Admin users
-        if ($user->is_admin) {
-            return redirect()->route('admin.dashboard')
-                ->with('success', 'Welcome back, ' . $user->name . '!');
-        }
-
         // Vendors
-        if ($user->is_vendor) {
+        if ($user->user_type === 'vendor') {
             // Check if vendor has a store
-            if ($user->hasStore()) {
+            if ($user->stores()->exists()) {
                 return redirect()->route('vendor.dashboard')
                     ->with('success', 'Welcome back to your store, ' . $user->name . '!');
             }

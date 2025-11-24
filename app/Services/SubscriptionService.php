@@ -28,7 +28,7 @@ class SubscriptionService
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'X-API-Key' => $this->apiKey,
                     'Accept' => 'application/json',
                 ])
                 ->get("{$this->baseUrl}/api/users/{$subscriptionUserId}");
@@ -56,14 +56,13 @@ class SubscriptionService
 
     /**
      * Update or create local user from subscription data
-     * THIS IS WHERE THE USER GETS SAVED TO RIZQMALL DATABASE
      */
     private function updateOrCreateLocalUser($userData)
     {
-        // Log the sync operation
         Log::info('Syncing user to RizqMall database', [
             'subscription_user_id' => $userData['id'],
             'email' => $userData['email'],
+            'account_type' => $userData['account_type'],
         ]);
 
         // Create or update user in RizqMall database
@@ -86,6 +85,7 @@ class SubscriptionService
         Log::info('User synced successfully', [
             'local_user_id' => $user->id,
             'subscription_user_id' => $userData['id'],
+            'user_type' => $user->user_type,
         ]);
 
         return $user;
@@ -102,7 +102,7 @@ class SubscriptionService
             try {
                 $response = Http::timeout($this->timeout)
                     ->withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'X-API-Key' => $this->apiKey,
                         'Accept' => 'application/json',
                     ])
                     ->get("{$this->baseUrl}/api/subscriptions/verify/{$subscriptionUserId}");
@@ -110,6 +110,11 @@ class SubscriptionService
                 if ($response->successful()) {
                     return $response->json('data');
                 }
+
+                Log::warning('Subscription verification failed', [
+                    'user_id' => $subscriptionUserId,
+                    'status' => $response->status(),
+                ]);
 
                 return null;
             } catch (\Exception $e) {
@@ -130,10 +135,12 @@ class SubscriptionService
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
+                    'X-API-Key' => $this->apiKey,
                     'Accept' => 'application/json',
                 ])
-                ->post("{$this->baseUrl}/api/auth/validate");
+                ->post("{$this->baseUrl}/api/auth/validate", [
+                    'token' => $token,
+                ]);
 
             return $response->successful() ? $response->json('data') : null;
 
@@ -156,7 +163,7 @@ class SubscriptionService
             try {
                 $response = Http::timeout($this->timeout)
                     ->withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'X-API-Key' => $this->apiKey,
                         'Accept' => 'application/json',
                     ])
                     ->get("{$this->baseUrl}/api/users/{$subscriptionUserId}/profile");
@@ -179,9 +186,9 @@ class SubscriptionService
     public function notifyEvent($event, $data)
     {
         try {
-            Http::timeout($this->timeout)
+            $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'X-API-Key' => $this->apiKey,
                     'Accept' => 'application/json',
                 ])
                 ->post("{$this->baseUrl}/api/webhooks/rizqmall", [
@@ -189,6 +196,13 @@ class SubscriptionService
                     'data' => $data,
                     'timestamp' => now()->toIso8601String(),
                 ]);
+
+            if (!$response->successful()) {
+                Log::warning('Failed to notify subscription system', [
+                    'event' => $event,
+                    'status' => $response->status(),
+                ]);
+            }
 
         } catch (\Exception $e) {
             Log::warning('Failed to notify subscription system', [
@@ -205,5 +219,14 @@ class SubscriptionService
     {
         Cache::forget("subscription_status_{$subscriptionUserId}");
         Cache::forget("user_profile_{$subscriptionUserId}");
+    }
+
+    /**
+     * Sync user data on demand
+     */
+    public function refreshUserData($subscriptionUserId)
+    {
+        $this->clearUserCache($subscriptionUserId);
+        return $this->syncUser($subscriptionUserId);
     }
 }
