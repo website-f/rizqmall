@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\VariantType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Intervention\Image\Facades\Image;
@@ -19,17 +20,19 @@ class ProductController extends Controller
     /**
      * Show product/service/pharmacy creation form
      */
-    public function create(Request $request, $storeId)
+    public function create(Request $request)
     {
-        $authUserId = session('auth_user_id');
-        if (!$authUserId) {
-            return redirect()->route('store.select-category')
-                ->with('error', 'Session expired. Please login again.');
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to continue.');
         }
 
-        $store = Store::where('id', $storeId)
-            ->where('auth_user_id', $authUserId)
-            ->firstOrFail();
+        $store = $user->stores()->first();
+        if (!$store) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please set up your store first.');
+        }
 
         $type = $request->query('type', 'product');
         if (!in_array($type, ['product', 'service', 'pharmacy'])) {
@@ -43,27 +46,29 @@ class ProductController extends Controller
             ->get();
 
         $tags = Tag::all();
-        
+
         // Get variant types for product variations
         $variantTypes = VariantType::orderBy('sort_order')->get();
 
-        return view('store.products', compact('store', 'type', 'categories', 'tags', 'variantTypes'));
+        return view('vendor.products.create', compact('store', 'type', 'categories', 'tags', 'variantTypes'));
     }
 
     /**
      * Store a new product/service/pharmacy item
      */
-    public function store(Request $request, $storeId)
+    public function store(Request $request)
     {
-        $authUserId = session('auth_user_id');
-        if (!$authUserId) {
-            return redirect()->route('store.select-category')
-                ->with('error', 'Session expired.');
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to continue.');
         }
 
-        $store = Store::where('id', $storeId)
-            ->where('auth_user_id', $authUserId)
-            ->firstOrFail();
+        $store = $user->stores()->first();
+        if (!$store) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please set up your store first.');
+        }
 
         // Base validation
         $rules = [
@@ -267,9 +272,8 @@ class ProductController extends Controller
 
             DB::commit();
 
-            return redirect()->route('rizqmall.home')
+            return redirect()->route('vendor.dashboard')
                 ->with('success', ucfirst($validated['type']) . ' "' . $product->name . '" created successfully!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Product creation failed: ' . $e->getMessage());
@@ -291,9 +295,9 @@ class ProductController extends Controller
             'specifications',
             'store'
         ])
-        ->where('slug', $slug)
-        ->where('status', 'published')
-        ->firstOrFail();
+            ->where('slug', $slug)
+            ->where('status', 'published')
+            ->firstOrFail();
 
         // Prepare variant data for JavaScript
         $variantData = [];
@@ -329,7 +333,7 @@ class ProductController extends Controller
                 ->flatten()
                 ->pluck('variant_type_id')
                 ->unique();
-            
+
             $variantTypes = VariantType::whereIn('id', $typeIds)->get();
         }
 
@@ -341,6 +345,27 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
+        // Vendor Dashboard: List own products
+        if ($request->routeIs('vendor.products.index')) {
+            $user = Auth::user();
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            $store = $user->stores()->first();
+            if (!$store) {
+                return redirect()->route('store.select-category');
+            }
+
+            $products = Product::where('store_id', $store->id)
+                ->with('category')
+                ->latest()
+                ->paginate(10);
+
+            return view('vendor.products.index', compact('products'));
+        }
+
+        // Public: List published products
         $query = Product::with(['images' => fn($q) => $q->where('is_primary', true), 'store'])
             ->where('status', 'published');
 

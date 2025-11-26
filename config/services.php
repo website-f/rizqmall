@@ -37,21 +37,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Subscription System (Microservice Integration)
+    | Sandbox System (Main Auth & Profile Microservice)
     |--------------------------------------------------------------------------
     */
 
-    'subscription' => [
-        'base_url' => env('SUBSCRIPTION_BASE_URL', 'https://rm.sandboxmalaysia.com'),
-        'api_key' => env('SUBSCRIPTION_API_KEY'),
-        'timeout' => env('SUBSCRIPTION_TIMEOUT', 10),
-        
+    'sandbox' => [
+        'url' => env('SANDBOX_URL', 'http://localhost:8000'),
+        'base_url' => env('SANDBOX_BASE_URL', 'https://rm.sandboxmalaysia.com'),
+        'api_key' => env('SANDBOX_API_KEY'),
+        'timeout' => env('SANDBOX_TIMEOUT', 10),
+
         // Webhook settings
-        'webhook_secret' => env('SUBSCRIPTION_WEBHOOK_SECRET'),
-        
+        'webhook_secret' => env('SANDBOX_WEBHOOK_SECRET'),
+
         // SSO settings
-        'sso_enabled' => env('SUBSCRIPTION_SSO_ENABLED', true),
-        'sso_secret' => env('SUBSCRIPTION_SSO_SECRET'),
+        'sso_enabled' => env('SANDBOX_SSO_ENABLED', true),
+        'sso_secret' => env('SANDBOX_SSO_SECRET'),
+    ],
+
+    // Alias for backward compatibility with views
+    'subscription' => [
+        'base_url' => env('SANDBOX_URL', 'http://localhost:8000'),
+    ],
+
+    'sso' => [
+        'token_expiry' => env('SSO_TOKEN_EXPIRY', 3600), // 1 hour
+        'session_lifetime' => env('SSO_SESSION_LIFETIME', 30), // 30 days
     ],
 
 ];

@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
@@ -25,7 +26,7 @@ class CartController extends Controller
             $sessionId = session()->getId();
             $cart = Cart::firstOrCreate(['session_id' => $sessionId]);
         }
-    
+
         return $cart;
     }
 
@@ -72,10 +73,10 @@ class CartController extends Controller
             $cart = $this->getCart();
 
             // Determine price
-            $price = $variant && $variant->sale_price 
-                ? $variant->sale_price 
-                : ($variant && $variant->price 
-                    ? $variant->price 
+            $price = $variant && $variant->sale_price
+                ? $variant->sale_price
+                : ($variant && $variant->price
+                    ? $variant->price
                     : ($product->sale_price ?? $product->regular_price));
 
             // Check if item already exists
@@ -87,7 +88,7 @@ class CartController extends Controller
             if ($cartItem) {
                 // Update quantity
                 $newQuantity = $cartItem->quantity + $request->quantity;
-                
+
                 // Check stock again
                 if ($product->type !== 'service') {
                     if ($availableStock < $newQuantity) {
@@ -97,7 +98,7 @@ class CartController extends Controller
                         ], 400);
                     }
                 }
-                
+
                 $cartItem->update(['quantity' => $newQuantity]);
             } else {
                 // Create new cart item
@@ -121,7 +122,6 @@ class CartController extends Controller
                 'cart_count' => $cart->item_count,
                 'cart_total' => number_format($cart->total, 2),
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -151,8 +151,8 @@ class CartController extends Controller
 
         // Check stock
         if ($cartItem->product->type !== 'service') {
-            $availableStock = $cartItem->variant 
-                ? $cartItem->variant->stock_quantity 
+            $availableStock = $cartItem->variant
+                ? $cartItem->variant->stock_quantity
                 : $cartItem->product->stock_quantity;
 
             if ($availableStock < $request->quantity) {

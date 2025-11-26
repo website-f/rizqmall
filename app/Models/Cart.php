@@ -12,7 +12,8 @@ class Cart extends Model
         'user_id',
         'session_id',
         // ... other fields
-    ]
+    ];
+
 
     /**
      * Get the cart items

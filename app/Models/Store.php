@@ -4,13 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Store extends Model
 {
     protected $fillable = [
-        'auth_user_id', 'store_category_id', 'name', 'slug', 'image', 'banner',
-        'phone', 'email', 'description', 'location', 'latitude', 'longitude',
-        'is_active', 'is_verified'
+        'user_id',
+        'store_category_id',
+        'name',
+        'slug',
+        'image',
+        'banner',
+        'phone',
+        'email',
+        'description',
+        'location',
+        'latitude',
+        'longitude',
+        'is_active',
+        'is_verified',
+        'business_registration_no',
+        'tax_id'
     ];
 
     protected $casts = [
@@ -23,7 +37,7 @@ class Store extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($store) {
             if (empty($store->slug)) {
                 $store->slug = Str::slug($store->name);
@@ -35,7 +49,7 @@ class Store extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     // Add new relationships
     public function orders()
     {

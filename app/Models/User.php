@@ -71,6 +71,16 @@ class User extends Authenticatable
         return $this->hasOne(Cart::class);
     }
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
     // Scopes
     public function scopeVendors($query)
     {
@@ -130,9 +140,9 @@ class User extends Authenticatable
             if (!$this->subscription_expires_at) {
                 return false;
             }
-            
-            return $this->subscription_status === 'active' && 
-                   $this->subscription_expires_at->isFuture();
+
+            return $this->subscription_status === 'active' &&
+                $this->subscription_expires_at->isFuture();
         }
 
         // Local vendors are always active
@@ -173,16 +183,16 @@ class User extends Authenticatable
 
     public function canCreateStore()
     {
-        return $this->is_vendor && 
-               !$this->hasStore() && 
-               $this->has_active_subscription;
+        return $this->is_vendor &&
+            !$this->hasStore() &&
+            $this->has_active_subscription;
     }
 
     public function canAccessVendorPanel()
     {
-        return $this->is_vendor && 
-               $this->hasStore() && 
-               $this->has_active_subscription;
+        return $this->is_vendor &&
+            $this->hasStore() &&
+            $this->has_active_subscription;
     }
 
     /**

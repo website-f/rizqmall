@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -77,6 +78,33 @@ class ProfileController extends Controller
 
         return redirect()->back()
             ->with('success', 'Avatar updated successfully!');
+    }
+
+    /**
+     * Update user password
+     */
+    public function updatePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return redirect()->back()
+                ->withErrors(['current_password' => 'Current password is incorrect.']);
+        }
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Password updated successfully!');
     }
 
     /**
@@ -173,7 +201,7 @@ class ProfileController extends Controller
             $newDefault = $user->addresses()
                 ->where('id', '!=', $address->id)
                 ->first();
-            
+
             if ($newDefault) {
                 $newDefault->setAsDefault();
             }

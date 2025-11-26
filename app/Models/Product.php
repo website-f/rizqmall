@@ -13,17 +13,50 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
- use SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
-        'store_id', 'product_category_id', 'type', 'product_type', 'name', 'slug',
-        'short_description', 'description', 'regular_price', 'sale_price', 'cost_price',
-        'sku', 'stock_quantity', 'low_stock_threshold', 'track_inventory', 'allow_backorder',
-        'weight', 'length', 'width', 'height', 'is_fragile', 'is_biodegradable', 'is_frozen',
-        'max_temperature', 'requires_prescription', 'expiry_date', 'has_expiry',
-        'service_duration', 'service_availability', 'service_days', 'service_start_time',
-        'service_end_time', 'drug_code', 'manufacturer', 'active_ingredient', 'dosage_form',
-        'strength', 'product_id_type', 'product_id_value', 'meta_title', 'meta_description',
+        'store_id',
+        'product_category_id',
+        'type',
+        'product_type',
+        'name',
+        'slug',
+        'short_description',
+        'description',
+        'regular_price',
+        'sale_price',
+        'cost_price',
+        'sku',
+        'stock_quantity',
+        'low_stock_threshold',
+        'track_inventory',
+        'allow_backorder',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'is_fragile',
+        'is_biodegradable',
+        'is_frozen',
+        'max_temperature',
+        'requires_prescription',
+        'expiry_date',
+        'has_expiry',
+        'service_duration',
+        'service_availability',
+        'service_days',
+        'service_start_time',
+        'service_end_time',
+        'drug_code',
+        'manufacturer',
+        'active_ingredient',
+        'dosage_form',
+        'strength',
+        'product_id_type',
+        'product_id_value',
+        'meta_title',
+        'meta_description',
         'status'
     ];
 
@@ -46,7 +79,7 @@ class Product extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($product) {
             if (empty($product->slug)) {
                 $product->slug = Str::slug($product->name);
@@ -87,6 +120,16 @@ class Product extends Model
         return $this->hasMany(ProductSpecification::class)->orderBy('sort_order');
     }
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class)->where('is_approved', true);
+    }
+
     public function getPrimaryImageAttribute()
     {
         $image = $this->images()->where('is_primary', true)->first();
@@ -104,6 +147,21 @@ class Product extends Model
         return round((($this->regular_price - $this->sale_price) / $this->regular_price) * 100);
     }
 
+    public function getRatingAttribute()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->primary_image;
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
@@ -112,5 +170,10 @@ class Product extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeForStore($query, $storeId)
+    {
+        return $query->where('store_id', $storeId);
     }
 }

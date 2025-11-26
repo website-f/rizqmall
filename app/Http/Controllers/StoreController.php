@@ -189,7 +189,7 @@ class StoreController extends Controller
 
         // Get store category to determine redirect
         $category = StoreCategory::find($storeCategoryId);
-        
+
         // Redirect to add first product
         return redirect()->route('vendor.products.create')
             ->with('success', 'Store created successfully! Now add your first product.');
@@ -219,7 +219,7 @@ class StoreController extends Controller
     public function stores()
     {
         $stores = Store::with(['category'])
-            ->withCount(['products' => function($query) {
+            ->withCount(['products' => function ($query) {
                 $query->where('status', 'published');
             }])
             ->where('is_active', true)
@@ -253,6 +253,87 @@ class StoreController extends Controller
     }
 
     /**
+     * Show store edit form
+     */
+    public function edit()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $store = $user->stores()->first();
+
+        if (!$store) {
+            return redirect()->route('store.select-category');
+        }
+
+        $category = $store->category;
+
+        return view('vendor.store.edit', compact('store', 'category'));
+    }
+
+    /**
+     * Update store details
+     */
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+        $store = $user->stores()->first();
+
+        if (!$store) {
+            abort(404);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'description' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'business_registration_no' => 'nullable|string|max:100',
+            'tax_id' => 'nullable|string|max:100',
+        ]);
+
+        $store->update([
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'description' => $request->description,
+            'location' => $request->location,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'business_registration_no' => $request->business_registration_no,
+            'tax_id' => $request->tax_id,
+        ]);
+
+        // Handle images if present
+        if ($request->filled('image')) {
+            $tempPath = str_replace('/storage/', '', $request->image);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newLogoPath = 'stores/' . $store->id . '/logo_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newLogoPath);
+                $store->image = $newLogoPath;
+                $store->save();
+            }
+        }
+
+        if ($request->filled('banner')) {
+            $tempPath = str_replace('/storage/', '', $request->banner);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newBannerPath = 'stores/' . $store->id . '/banner_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newBannerPath);
+                $store->banner = $newBannerPath;
+                $store->save();
+            }
+        }
+
+        return redirect()->route('vendor.store.edit')->with('success', 'Store updated successfully.');
+    }
+
+    /**
      * Change store banner
      */
     public function changeBanner(Request $request, Store $store)
@@ -276,7 +357,7 @@ class StoreController extends Controller
             if ($store->banner) {
                 Storage::disk('public')->delete($store->banner);
             }
-            
+
             Storage::disk('public')->move($tempPath, $permanentPath);
             $store->banner = $permanentPath;
             $store->save();

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -115,10 +117,88 @@ class CustomerDashboardController extends Controller
     public function wishlist()
     {
         $user = Auth::user();
-        
-        // TODO: Implement wishlist functionality
-        
-        return view('customer.wishlist', compact('user'));
+
+        $wishlistItems = $user->wishlists()
+            ->with(['product.store'])
+            ->latest()
+            ->paginate(12);
+
+        return view('customer.wishlist', compact('user', 'wishlistItems'));
+    }
+
+    /**
+     * Add product to wishlist
+     */
+    public function addToWishlist(Product $product)
+    {
+        $user = Auth::user();
+
+        // Check if already in wishlist
+        $exists = $user->wishlists()->where('product_id', $product->id)->exists();
+
+        if ($exists) {
+            return redirect()->back()->with('info', 'Product is already in your wishlist.');
+        }
+
+        $user->wishlists()->create([
+            'product_id' => $product->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Product added to wishlist!');
+    }
+
+    /**
+     * Remove product from wishlist
+     */
+    public function removeFromWishlist(Wishlist $wishlist)
+    {
+        $user = Auth::user();
+
+        // Verify wishlist belongs to this user
+        if ($wishlist->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $wishlist->delete();
+
+        return redirect()->back()->with('success', 'Product removed from wishlist.');
+    }
+
+    /**
+     * Add all wishlist items to cart
+     */
+    public function addAllToCart()
+    {
+        $user = Auth::user();
+        $wishlistItems = $user->wishlists()->with('product')->get();
+
+        if ($wishlistItems->isEmpty()) {
+            return redirect()->back()->with('error', 'Your wishlist is empty.');
+        }
+
+        $cart = $user->cart()->firstOrCreate(['user_id' => $user->id]);
+        $addedCount = 0;
+
+        foreach ($wishlistItems as $wishlistItem) {
+            if ($wishlistItem->product && $wishlistItem->product->stock_quantity > 0) {
+                // Check if already in cart
+                $cartItem = $cart->items()->where('product_id', $wishlistItem->product_id)->first();
+
+                if ($cartItem) {
+                    $cartItem->increment('quantity');
+                } else {
+                    $cart->items()->create([
+                        'product_id' => $wishlistItem->product_id,
+                        'quantity' => 1,
+                        'price' => $wishlistItem->product->sale_price ?? $wishlistItem->product->regular_price,
+                    ]);
+                }
+                $addedCount++;
+            }
+        }
+
+        return redirect()->route('cart.index')
+            ->with('success', "{$addedCount} items added to cart!");
     }
 
     /**
@@ -127,9 +207,9 @@ class CustomerDashboardController extends Controller
     public function reviews()
     {
         $user = Auth::user();
-        
+
         // TODO: Implement reviews functionality
-        
+
         return view('customer.reviews', compact('user'));
     }
 }

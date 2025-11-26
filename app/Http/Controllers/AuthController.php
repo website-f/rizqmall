@@ -21,62 +21,56 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle incoming SSO request from subscription system
-     * Route: GET /auth/redirect?user_id=123&email=user@example.com&token=xyz
+     * Handle incoming SSO request from Sandbox (token-based)
+     * Route: GET /auth/sso?token=xyz
      */
-    public function handleSubscriptionRedirect(Request $request)
+    public function handleSsoLogin(Request $request)
     {
-        // Validate incoming request
         $request->validate([
-            'user_id' => 'required|integer',
-            'email' => 'required|email',
-            'name' => 'required|string',
-            'token' => 'nullable|string',
-            'customer' => 'nullable|string', // 'true' for customer-only access
+            'token' => 'required|string',
         ]);
 
-        $subscriptionUserId = $request->user_id;
-        $email = $request->email;
-        $name = $request->name;
-        $isCustomerOnly = $request->customer === 'true';
-
         Log::info('SSO Login attempt', [
-            'user_id' => $subscriptionUserId,
-            'email' => $email,
-            'customer_only' => $isCustomerOnly,
             'ip' => $request->ip(),
         ]);
 
         try {
-            // Step 1: Fetch user data from subscription system API
-            $userData = $this->subscriptionService->syncUser($subscriptionUserId);
+            // Step 1: Validate token with Sandbox
+            $sandboxService = app(\App\Services\SandboxApiService::class);
+            $userData = $sandboxService->validateSsoToken($request->token);
 
             if (!$userData) {
-                Log::error('Failed to sync user from subscription system', [
-                    'user_id' => $subscriptionUserId
-                ]);
-                
+                Log::error('SSO token validation failed');
+
                 return redirect()->route('rizqmall.home')
-                    ->with('error', 'Unable to authenticate. Please try again or contact support.');
+                    ->with('error', 'Invalid or expired authentication token. Please login again.');
             }
 
-            // Step 2: Verify subscription status (only for vendors)
-            $subscriptionStatus = $this->subscriptionService->verifySubscription($subscriptionUserId);
-            
-            // Update local subscription data
-            if ($subscriptionStatus) {
-                $userData->update([
-                    'subscription_status' => $subscriptionStatus['status'],
-                    'subscription_expires_at' => $subscriptionStatus['expires_at'],
-                ]);
-            }
+            // Step 2: Create or update local user
+            $user = User::updateOrCreate(
+                ['subscription_user_id' => $userData['id']],
+                [
+                    'name' => $userData['name'],
+                    'email' => $userData['email'],
+                    'phone' => $userData['phone'] ?? null,
+                    'avatar' => $userData['avatar'] ?? null,
+                    'user_type' => $userData['user_type'],
+                    'auth_type' => 'sso',
+                    'is_active' => true,
+                    'email_verified' => true,
+                    'subscription_status' => $userData['subscription_status'],
+                    'subscription_expires_at' => $userData['subscription_expires_at'] ? \Carbon\Carbon::parse($userData['subscription_expires_at']) : null,
+                    'last_sync_at' => now(),
+                ]
+            );
 
-            // Step 3: Check if vendor subscription is required and active
-            if ($userData->user_type === 'vendor') {
-                if (!$subscriptionStatus || $subscriptionStatus['status'] !== 'active') {
+            // Step 3: Check vendor subscription requirements
+            if ($user->user_type === 'vendor') {
+                if ($user->subscription_status !== 'active') {
                     Log::warning('Vendor subscription not active', [
-                        'user_id' => $subscriptionUserId,
-                        'status' => $subscriptionStatus['status'] ?? 'unknown'
+                        'user_id' => $user->id,
+                        'subscription_user_id' => $userData['id'],
+                        'status' => $user->subscription_status,
                     ]);
 
                     return redirect()->route('subscription.expired')
@@ -84,10 +78,10 @@ class AuthController extends Controller
                 }
             }
 
-            // Step 4: Create or update user session
+            // Step 4: Create user session
             $sessionId = Str::uuid();
             UserSession::updateOrCreate(
-                ['user_id' => $userData->id],
+                ['user_id' => $user->id],
                 [
                     'session_id' => $sessionId,
                     'ip_address' => $request->ip(),
@@ -98,41 +92,98 @@ class AuthController extends Controller
                 ]
             );
 
-            // Step 5: Log the user in using Laravel Auth
-            Auth::login($userData, true); // true = remember me
-            
-            // Update last login timestamp
-            $userData->update([
+            // Step 5: Log the user in
+            Auth::login($user, true);
+
+            // Update last login
+            $user->update([
                 'last_login_at' => now(),
                 'last_login_ip' => $request->ip(),
             ]);
 
-            // Step 6: Store additional session data
+            // Step 6: Merge guest cart if exists
+            if (session()->has('guest_cart_id')) {
+                $this->mergeGuestCart($user);
+            }
+
+            // Step 7: Store session data
             session([
-                'subscription_user_id' => $subscriptionUserId,
+                'subscription_user_id' => $userData['id'],
                 'session_id' => $sessionId,
-                'user_type' => $userData->user_type,
-                'subscription_last_verified' => now(),
+                'user_type' => $user->user_type,
+                'stores_quota' => $userData['stores_quota'] ?? 0,
             ]);
 
-            Log::info('User logged in successfully', [
-                'user_id' => $userData->id,
-                'subscription_user_id' => $subscriptionUserId,
-                'user_type' => $userData->user_type,
+            Log::info('User logged in successfully via SSO', [
+                'user_id' => $user->id,
+                'subscription_user_id' => $userData['id'],
+                'user_type' => $user->user_type,
             ]);
 
-            // Step 7: Redirect based on user type and status
-            return $this->redirectAfterLogin($userData);
-
+            // Step 8: Redirect based on user type
+            return $this->redirectAfterLogin($user);
         } catch (\Exception $e) {
             Log::error('SSO Login failed', [
-                'user_id' => $subscriptionUserId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('rizqmall.home')
                 ->with('error', 'An error occurred during authentication. Please try again.');
+        }
+    }
+
+    /**
+     * Merge guest cart into user cart
+     */
+    private function mergeGuestCart(User $user)
+    {
+        try {
+            $guestCartId = session('guest_cart_id');
+            $guestCart = \App\Models\Cart::where('session_id', $guestCartId)->first();
+
+            if ($guestCart) {
+                // Get or create user cart
+                $userCart = $user->cart()->firstOrCreate([
+                    'user_id' => $user->id,
+                ]);
+
+                // Move all items from guest cart to user cart
+                foreach ($guestCart->items as $item) {
+                    // Check if item already exists in user cart
+                    $existingItem = $userCart->items()
+                        ->where('product_id', $item->product_id)
+                        ->where('variant_id', $item->variant_id)
+                        ->first();
+
+                    if ($existingItem) {
+                        // Update quantity
+                        $existingItem->update([
+                            'quantity' => $existingItem->quantity + $item->quantity,
+                        ]);
+                    } else {
+                        // Move item to user cart
+                        $item->update(['cart_id' => $userCart->id]);
+                    }
+                }
+
+                // Mark guest cart as merged and delete
+                $guestCart->update(['merged_at' => now()]);
+                $guestCart->delete();
+
+                // Clear guest cart session
+                session()->forget('guest_cart_id');
+
+                Log::info('Guest cart merged successfully', [
+                    'user_id' => $user->id,
+                    'guest_cart_id' => $guestCartId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to merge guest cart', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -148,7 +199,7 @@ class AuthController extends Controller
                 return redirect()->route('vendor.dashboard')
                     ->with('success', 'Welcome back to your store, ' . $user->name . '!');
             }
-            
+
             // New vendor without store - redirect to store setup
             return redirect()->route('store.select-category')
                 ->with('info', 'Welcome! Let\'s set up your store to get started.');
@@ -198,7 +249,7 @@ class AuthController extends Controller
             // Here you would validate credentials with subscription system
             // For now, we'll just check if user has active subscription
             $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
-            
+
             if (!$subscriptionStatus) {
                 return back()->with('error', 'Unable to verify your account. Please try logging in through the subscription system.');
             }
@@ -211,7 +262,7 @@ class AuthController extends Controller
 
             // Log the user in
             Auth::login($user, $request->has('remember'));
-            
+
             $user->updateLastLogin($request->ip());
 
             // Create session
@@ -234,7 +285,6 @@ class AuthController extends Controller
             ]);
 
             return $this->redirectAfterLogin($user);
-
         } catch (\Exception $e) {
             Log::error('Direct login failed', [
                 'email' => $request->email,
@@ -252,7 +302,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = Auth::user();
-        
+
         if ($user) {
             Log::info('User logging out', [
                 'user_id' => $user->id,
@@ -261,7 +311,7 @@ class AuthController extends Controller
 
             // Delete user session
             UserSession::where('user_id', $user->id)->delete();
-            
+
             // Clear cache
             $this->subscriptionService->clearUserCache($user->subscription_user_id);
         }
@@ -311,7 +361,7 @@ class AuthController extends Controller
     public function verifySession(Request $request)
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json(['valid' => false, 'message' => 'Not authenticated'], 401);
         }
@@ -331,11 +381,11 @@ class AuthController extends Controller
         // Verify subscription is still active (for vendors)
         if ($user->is_vendor) {
             $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
-            
+
             if (!$subscriptionStatus || $subscriptionStatus['status'] !== 'active') {
                 Auth::logout();
                 return response()->json([
-                    'valid' => false, 
+                    'valid' => false,
                     'message' => 'Subscription expired',
                     'redirect' => route('subscription.expired')
                 ], 403);
@@ -376,5 +426,96 @@ class AuthController extends Controller
 
         return redirect()->route('checkout.index')
             ->with('success', 'Continue with your purchase as guest.');
+    }
+
+    /**
+     * Show customer registration form
+     * Route: GET /register
+     */
+    public function showRegisterForm()
+    {
+        // If already logged in, redirect to home
+        if (Auth::check()) {
+            return redirect()->route('rizqmall.home');
+        }
+
+        return view('auth.register');
+    }
+
+    /**
+     * Handle customer registration
+     * Route: POST /register
+     */
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'phone' => 'required|string|max:20',
+            'password' => 'required|string|min:8|confirmed',
+            'terms' => 'required|accepted',
+        ]);
+
+        try {
+            // Create new customer user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+                'user_type' => 'customer',
+                'auth_type' => 'local',
+                'is_active' => true,
+                'email_verified' => false, // Will need to verify email
+            ]);
+
+            Log::info('New customer registered', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+            // Create session
+            $sessionId = Str::uuid();
+            UserSession::create([
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'last_activity' => now(),
+                'expires_at' => now()->addDays(30),
+            ]);
+
+            // Log the user in
+            Auth::login($user, true);
+
+            // Update last login
+            $user->update([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+            ]);
+
+            // Store session data
+            session([
+                'session_id' => $sessionId,
+                'user_type' => 'customer',
+            ]);
+
+            // Merge guest cart if exists
+            if (session()->has('guest_cart_id')) {
+                $this->mergeGuestCart($user);
+            }
+
+            return redirect()->route('rizqmall.home')
+                ->with('success', 'Welcome to RizqMall, ' . $user->name . '! Your account has been created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Customer registration failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->with('error', 'Registration failed. Please try again.');
+        }
     }
 }

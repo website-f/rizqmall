@@ -6,25 +6,31 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\Vendor\VendorDashboardController;
-use App\Http\Controllers\Vendor\VendorStoreController;
-use App\Http\Controllers\Vendor\VendorProductController;
-use App\Http\Controllers\Customer\CustomerDashboardController;
-use App\Http\Controllers\Customer\ProfileController;
+use App\Http\Controllers\VendorDashboardController;
+use App\Http\Controllers\CustomerDashboardController;
+use App\Http\Controllers\ProfileController; // Class name in ProfileDashboardController.php
+use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes (SSO from Subscription System)
+| Authentication Routes (SSO from Sandbox System)
 |--------------------------------------------------------------------------
 */
-Route::get('/auth/redirect', [AuthController::class, 'handleSubscriptionRedirect'])->name('auth.redirect');
+
+Route::get('/auth/sso', [AuthController::class, 'handleSsoLogin'])->name('auth.sso');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 Route::get('/auth/verify-session', [AuthController::class, 'verifySession'])->name('auth.verify-session');
 Route::get('/subscription/expired', [AuthController::class, 'subscriptionExpired'])->name('subscription.expired');
-Route::get('/subscription/renew', [AuthController::class, 'redirectToRenewal'])->name('subscription.renew');
 
-// Guest checkout
-Route::post('/guest-checkout', [AuthController::class, 'guestCheckout'])->name('guest.checkout');
+// Login routes
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+
+// Customer Registration routes
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('customer.register.form');
+Route::post('/register', [AuthController::class, 'register'])->name('customer.register');
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -61,14 +67,14 @@ Route::prefix('cart')->name('cart.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'validate.session'])->group(function () {
-    
+
     /*
     |--------------------------------------------------------------------------
     | Vendor Routes (Store Setup & Management)
     |--------------------------------------------------------------------------
     */
     Route::middleware(['verify.vendor', 'check.subscription'])->group(function () {
-        
+
         // Store Setup Flow (First Time)
         Route::get('/select-store-category', [StoreController::class, 'showCategorySelection'])
             ->name('store.select-category');
@@ -80,27 +86,27 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
         // Vendor Dashboard
         Route::prefix('vendor')->name('vendor.')->group(function () {
             Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('dashboard');
-            
+
             // Store Management
-            Route::get('/store/edit', [VendorStoreController::class, 'edit'])->name('store.edit');
-            Route::put('/store/update', [VendorStoreController::class, 'update'])->name('store.update');
-            Route::post('/store/change-banner', [VendorStoreController::class, 'changeBanner'])->name('store.changeBanner');
-            Route::post('/store/change-logo', [VendorStoreController::class, 'changeLogo'])->name('store.changeLogo');
-            
+            Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
+            Route::put('/store/update', [StoreController::class, 'update'])->name('store.update');
+            Route::post('/store/change-banner', [StoreController::class, 'changeBanner'])->name('store.changeBanner');
+            Route::post('/store/change-logo', [StoreController::class, 'changeLogo'])->name('store.changeLogo');
+
             // Product Management
-            Route::resource('products', VendorProductController::class);
-            Route::post('/products/{product}/toggle-status', [VendorProductController::class, 'toggleStatus'])
+            Route::resource('products', ProductController::class);
+            Route::post('/products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])
                 ->name('products.toggle-status');
-            
+
             // Orders
             Route::get('/orders', [VendorDashboardController::class, 'orders'])->name('orders.index');
             Route::get('/orders/{order}', [VendorDashboardController::class, 'showOrder'])->name('orders.show');
             Route::put('/orders/{order}/status', [VendorDashboardController::class, 'updateOrderStatus'])
                 ->name('orders.update-status');
-            
+
             // Analytics
             Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('analytics');
-            
+
             // Settings
             Route::get('/settings', [VendorDashboardController::class, 'settings'])->name('settings');
             Route::put('/settings', [VendorDashboardController::class, 'updateSettings'])->name('settings.update');
@@ -114,12 +120,13 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
     */
     Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
-        
+
         // Profile
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
-        
+        Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
         // Addresses
         Route::get('/addresses', [ProfileController::class, 'addresses'])->name('addresses');
         Route::post('/addresses', [ProfileController::class, 'storeAddress'])->name('addresses.store');
@@ -127,18 +134,22 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
         Route::delete('/addresses/{address}', [ProfileController::class, 'deleteAddress'])->name('addresses.delete');
         Route::post('/addresses/{address}/set-default', [ProfileController::class, 'setDefaultAddress'])
             ->name('addresses.set-default');
-        
+
         // Orders
         Route::get('/orders', [CustomerDashboardController::class, 'orders'])->name('orders.index');
         Route::get('/orders/{order}', [CustomerDashboardController::class, 'showOrder'])->name('orders.show');
         Route::post('/orders/{order}/cancel', [CustomerDashboardController::class, 'cancelOrder'])
             ->name('orders.cancel');
-        
+
         // Wishlist
         Route::get('/wishlist', [CustomerDashboardController::class, 'wishlist'])->name('wishlist');
-        
+        Route::post('/wishlist/add/{product}', [CustomerDashboardController::class, 'addToWishlist'])->name('wishlist.add');
+        Route::delete('/wishlist/remove/{wishlist}', [CustomerDashboardController::class, 'removeFromWishlist'])->name('wishlist.remove');
+        Route::post('/wishlist/add-all-to-cart', [CustomerDashboardController::class, 'addAllToCart'])->name('wishlist.add-all-to-cart');
+
         // Reviews
         Route::get('/reviews', [CustomerDashboardController::class, 'reviews'])->name('reviews');
+        Route::post('/reviews', [CustomerDashboardController::class, 'storeReview'])->name('reviews.store');
     });
 
     /*
@@ -147,9 +158,9 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
-        Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->name('process');
-        Route::get('/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
+        Route::get('/', [CheckoutController::class, 'index'])->name('index');
+        Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+        Route::get('/success/{order}', [CheckoutController::class, 'success'])->name('success');
     });
 });
 
@@ -184,3 +195,13 @@ Route::middleware(['auth', 'verify.vendor', 'verify.store.owner'])->group(functi
 Route::pattern('store', '[0-9]+');
 Route::pattern('product', '[0-9]+');
 Route::pattern('slug', '[a-z0-9-]+');
+
+// Fallback route for storage files (Windows symlink workaround)
+// MUST be at the end to avoid conflicts with other routes
+Route::get('/storage/{path}', function ($path) {
+    $file = storage_path('app/public/' . $path);
+    if (!file_exists($file)) {
+        abort(404);
+    }
+    return response()->file($file);
+})->where('path', '.*');
