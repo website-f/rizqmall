@@ -129,7 +129,7 @@ class CustomerDashboardController extends Controller
     /**
      * Add product to wishlist
      */
-    public function addToWishlist(Product $product)
+    public function addToWishlist(Request $request, Product $product)
     {
         $user = Auth::user();
 
@@ -137,6 +137,9 @@ class CustomerDashboardController extends Controller
         $exists = $user->wishlists()->where('product_id', $product->id)->exists();
 
         if ($exists) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Product is already in your wishlist.'], 200);
+            }
             return redirect()->back()->with('info', 'Product is already in your wishlist.');
         }
 
@@ -144,22 +147,33 @@ class CustomerDashboardController extends Controller
             'product_id' => $product->id,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Product added to wishlist!'], 200);
+        }
+
         return redirect()->back()->with('success', 'Product added to wishlist!');
     }
 
     /**
      * Remove product from wishlist
      */
-    public function removeFromWishlist(Wishlist $wishlist)
+    public function removeFromWishlist(Request $request, Wishlist $wishlist)
     {
         $user = Auth::user();
 
         // Verify wishlist belongs to this user
         if ($wishlist->user_id !== $user->id) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Unauthorized access.'], 403);
+            }
             abort(403, 'Unauthorized access.');
         }
 
         $wishlist->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Product removed from wishlist.'], 200);
+        }
 
         return redirect()->back()->with('success', 'Product removed from wishlist.');
     }

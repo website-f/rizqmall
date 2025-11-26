@@ -122,6 +122,9 @@ class StoreController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'image' => 'nullable|string',
             'banner' => 'nullable|string',
+            'ssm_document' => 'nullable|string',
+            'ic_document' => 'nullable|string',
+            'business_registration_number' => 'nullable|string|max:100',
             'business_registration_no' => 'nullable|string|max:100',
             'tax_id' => 'nullable|string|max:100',
         ]);
@@ -137,6 +140,8 @@ class StoreController extends Controller
         // Handle uploaded files
         $logoPath = null;
         $bannerPath = null;
+        $ssmDocPath = null;
+        $icDocPath = null;
         $storeFolder = 'stores/' . Str::uuid();
 
         if ($request->filled('image')) {
@@ -157,6 +162,24 @@ class StoreController extends Controller
             }
         }
 
+        if ($request->filled('ssm_document')) {
+            $tempPath = str_replace('/storage/', '', $request->ssm_document);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newSsmPath = $storeFolder . '/ssm_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newSsmPath);
+                $ssmDocPath = $newSsmPath;
+            }
+        }
+
+        if ($request->filled('ic_document')) {
+            $tempPath = str_replace('/storage/', '', $request->ic_document);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newIcPath = $storeFolder . '/ic_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newIcPath);
+                $icDocPath = $newIcPath;
+            }
+        }
+
         // Create Store
         $store = Store::create([
             'user_id' => $user->id,
@@ -171,6 +194,9 @@ class StoreController extends Controller
             'longitude' => $request->longitude,
             'image' => $logoPath,
             'banner' => $bannerPath,
+            'ssm_document' => $ssmDocPath,
+            'ic_document' => $icDocPath,
+            'business_registration_number' => $request->business_registration_number,
             'business_registration_no' => $request->business_registration_no,
             'tax_id' => $request->tax_id,
             'status' => 'active',
@@ -294,6 +320,7 @@ class StoreController extends Controller
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'business_registration_no' => 'nullable|string|max:100',
+            'business_registration_number' => 'nullable|string|max:100',
             'tax_id' => 'nullable|string|max:100',
         ]);
 
@@ -306,6 +333,7 @@ class StoreController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'business_registration_no' => $request->business_registration_no,
+            'business_registration_number' => $request->business_registration_number,
             'tax_id' => $request->tax_id,
         ]);
 
@@ -326,6 +354,28 @@ class StoreController extends Controller
                 $newBannerPath = 'stores/' . $store->id . '/banner_' . basename($tempPath);
                 Storage::disk('public')->move($tempPath, $newBannerPath);
                 $store->banner = $newBannerPath;
+                $store->save();
+            }
+        }
+
+        // Handle SSM document
+        if ($request->filled('ssm_document')) {
+            $tempPath = str_replace('/storage/', '', $request->ssm_document);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newSsmPath = 'stores/' . $store->id . '/ssm_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newSsmPath);
+                $store->ssm_document = $newSsmPath;
+                $store->save();
+            }
+        }
+
+        // Handle IC document
+        if ($request->filled('ic_document')) {
+            $tempPath = str_replace('/storage/', '', $request->ic_document);
+            if (Storage::disk('public')->exists($tempPath)) {
+                $newIcPath = 'stores/' . $store->id . '/ic_' . basename($tempPath);
+                Storage::disk('public')->move($tempPath, $newIcPath);
+                $store->ic_document = $newIcPath;
                 $store->save();
             }
         }

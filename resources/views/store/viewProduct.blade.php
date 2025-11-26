@@ -824,323 +824,73 @@
         }
 
         async function buyNow() {
-                const success = await addToCart();
-                if (success) {
-                    setTimeout(() => {
-                                <
-                                span class = "badge bg-secondary me-1" > {{ $tag->name }} < /span>
-                            @endforeach <
-                            /div>
-                        @endif <
-                        /div> <
-                        /div> <
-                        /div> <
-                        /div>
+            const success = await addToCart();
+            if (success) {
+                setTimeout(() => {
+                    window.location.href = '/cart';
+                }, 2100);
+            }
+        }
 
-                        <
-                        !--Product Details Tabs-- >
-                        <
-                        div class = "product-tabs"
-                    style = "margin-top: 60px;" >
-                        <
-                        ul class = "nav nav-tabs"
-                    role = "tablist"
-                    style = "border-bottom: 3px solid #e5e7eb;" >
-                        <
-                        li class = "nav-item" >
-                        <
-                        button class = "nav-link active"
-                    data - bs - toggle = "tab"
-                    data - bs - target = "#description"
-                    style =
-                        "border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;" >
-                        Description <
-                        /button> <
-                        /li>
-                    @if ($product->specifications->count() > 0)
-                        <
-                        li class = "nav-item" >
-                        <
-                        button class = "nav-link"
-                        data - bs - toggle = "tab"
-                        data - bs - target = "#specifications"
-                        style =
-                            "border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;" >
-                            Specifications <
-                            /button> <
-                            /li>
-                    @endif
-                    @if ($product->type === 'product')
-                        <
-                        li class = "nav-item" >
-                        <
-                        button class = "nav-link"
-                        data - bs - toggle = "tab"
-                        data - bs - target = "#shipping"
-                        style =
-                            "border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;" >
-                            Shipping Info <
-                            /button> <
-                            /li>
-                    @endif <
-                    /ul>
+        function bookService() {
+            CartManager.showErrorModal('Service booking coming soon!');
+        }
 
-                    <
-                    div class = "tab-content p-4" >
-                    <
-                    !--Description Tab-- >
-                    <
-                    div class = "tab-pane fade show active"
-                    id = "description" >
-                        <
-                        div class = "content-section" >
-                        {!! nl2br(e($product->description)) !!} <
-                        /div> <
-                        /div>
+        async function toggleWishlist(button) {
+            const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
 
-                        <
-                        !--Specifications Tab-- >
-                        @if ($product->specifications->count() > 0)
-                            <
-                            div class = "tab-pane fade"
-                            id = "specifications" >
-                                @php
-                                    $groupedSpecs = $product->specifications->groupBy('spec_group');
-                                @endphp
+            if (!productId) {
+                alert('Product not found');
+                return;
+            }
 
-                            @foreach ($groupedSpecs as $group => $specs)
-                                <
-                                h5 class = "mb-3 mt-4" > {{ $group }} < /h5> <
-                                    table style = "width: 100%;" >
-                                    @foreach ($specs as $spec)
-                                        <
-                                        tr style = "border-bottom: 1px solid #e5e7eb;" >
-                                            <
-                                            td style = "padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;" >
-                                            {{ $spec->spec_key }} < /td> <
-                                            td style = "padding: 16px 0; color: #1f2937;" > {{ $spec->spec_value }} <
-                                            /td> <
-                                            /tr>
-                                    @endforeach <
-                                    /table>
-                            @endforeach <
-                            /div>
-                        @endif
+            // Check if user is logged in
+            @guest
+            window.location.href = '{{ route('login') }}';
+            return;
+        @endguest
 
-                        <
-                        !-- Shipping Tab-- >
-                    @if ($product->type === 'product')
-                        <
-                        div class = "tab-pane fade"
-                        id = "shipping" >
-                            <
-                            h5 class = "mb-3" > Shipping Information < /h5> <
-                            table style = "width: 100%;" >
-                            @if ($product->weight)
-                                <
-                                tr style = "border-bottom: 1px solid #e5e7eb;" >
-                                    <
-                                    td style = "padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;" > Weight <
-                                    /td> <
-                                    td style = "padding: 16px 0; color: #1f2937;" > {{ $product->weight }} kg < /td> <
-                                    /tr>
-                            @endif
-                        @if ($product->length && $product->width && $product->height)
-                            <
-                            tr style = "border-bottom: 1px solid #e5e7eb;" >
-                                <
-                                td style = "padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;" > Dimensions <
-                                /td> <
-                                td style = "padding: 16px 0; color: #1f2937;" >
-                                {{ $product->length }}× {{ $product->width }}× {{ $product->height }} cm < /td> <
-                                /tr>
-                        @endif <
-                        tr style = "border-bottom: 1px solid #e5e7eb;" >
-                            <
-                            td style = "padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;" > Shipping < /td> <
-                            td style = "padding: 16px 0; color: #1f2937;" > Free shipping
-                        for orders above RM100 < /td> <
-                            /tr> <
-                            tr >
-                            <
-                            td style = "padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;" > Delivery Time <
-                            /td> <
-                            td style = "padding: 16px 0; color: #1f2937;" > 2 - 5 business days < /td> <
-                            /tr> <
-                            /table> <
-                            /div>
-                    @endif <
-                    /div> <
-                    /div> <
-                    /div>
+        const isActive = button.classList.contains('active');
 
-                    <
-                    script >
-                        // Variant data
-                        const variantsData = @json($variantData ?? []);
-                    const selectedOptions = {};
-
-                    // Image gallery
-                    function changeMainImage(thumbnail) {
-                        const imageUrl = thumbnail.dataset.image;
-                        document.getElementById('mainImage').src = imageUrl;
-
-                        document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
-                        thumbnail.classList.add('active');
+        try {
+            if (isActive) {
+                // Remove from wishlist - need to get wishlist ID first
+                // For now, just toggle UI
+                button.classList.remove('active');
+                const icon = button.querySelector('i');
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            } else {
+                // Add to wishlist
+                const response = await fetch(`/customer/wishlist/add/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
+                });
 
-                    // Quantity controls
-                    function incrementQty() {
-                        const input = document.getElementById('quantity');
-                        if (input && parseInt(input.value) < 99) {
-                            input.value = parseInt(input.value) + 1;
-                        }
+                if (response.ok) {
+                    button.classList.add('active');
+                    const icon = button.querySelector('i');
+                    icon.classList.add('fas');
+                    icon.classList.remove('far');
+
+                    // Show success message
+                    if (typeof CartManager !== 'undefined') {
+                        CartManager.showSuccessModal('Added to wishlist!');
+                    } else {
+                        alert('Added to wishlist!');
                     }
-
-                    function decrementQty() {
-                        const input = document.getElementById('quantity');
-                        if (input && parseInt(input.value) > 1) {
-                            input.value = parseInt(input.value) - 1;
-                        }
-                    }
-
-                    // Variant selection
-                    function selectVariantOption(typeId, value, button) {
-                        selectedOptions[typeId] = value;
-
-                        document.querySelectorAll(`[data-type="${typeId}"]`).forEach(btn => {
-                            btn.classList.remove('selected');
-                        });
-                        button.classList.add('selected');
-
-                        const label = document.getElementById(`selected_${typeId}`);
-                        if (label) label.textContent = value;
-
-                        findMatchingVariant();
-                    }
-
-                    function findMatchingVariant() {
-                        const variant = variantsData.find(v => {
-                            return Object.keys(selectedOptions).every(typeId => {
-                                const option = v.options[typeId];
-                                return option && option.value == selectedOptions[typeId];
-                            });
-                        });
-
-                        const alert = document.getElementById('variantAlert');
-
-                        if (variant) {
-                            document.getElementById('selectedVariantId').value = variant.id;
-                            if (alert) alert.style.display = 'none';
-
-                            const price = variant.sale_price || variant.price;
-                            const priceDisplay = document.getElementById('displayPrice');
-                            if (priceDisplay) {
-                                priceDisplay.textContent = `RM ${parseFloat(price).toFixed(2)}`;
-                            }
-                        } else {
-                            if (alert) alert.style.display = 'block';
-                        }
-                    }
-
-                    // Cart actions
-                    async function addToCart() {
-                        const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
-                        const productType = document.querySelector('[data-product-type]')?.dataset.productType;
-                        const quantity = parseInt(document.getElementById('quantity')?.value || 1);
-
-                        if (!productId) {
-                            CartManager.showErrorModal('Product not found');
-                            return false;
-                        }
-
-                        let variantId = null;
-
-                        if (productType === 'variable') {
-                            variantId = document.getElementById('selectedVariantId')?.value;
-                            if (!variantId) {
-                                CartManager.showErrorModal('Please select all product options');
-                                return false;
-                            }
-                        }
-
-                        const success = await CartManager.addToCart(productId, variantId, quantity);
-                        if (success) {
-                            const qtyInput = document.getElementById('quantity');
-                            if (qtyInput) qtyInput.value = 1;
-                        }
-                        return success;
-                    }
-
-                    async function buyNow() {
-                        const success = await addToCart();
-                        if (success) {
-                            setTimeout(() => {
-                                window.location.href = '/cart';
-                            }, 2100);
-                        }
-                    }
-
-                    function bookService() {
-                        CartManager.showErrorModal('Service booking coming soon!');
-                    }
-
-                    async function toggleWishlist(button) {
-                        const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
-
-                        if (!productId) {
-                            alert('Product not found');
-                            return;
-                        }
-
-                        // Check if user is logged in
-                        @guest
-                        window.location.href = '{{ route('login') }}';
-                        return;
-                    @endguest
-
-                    const isActive = button.classList.contains('active');
-
-                    try {
-                        if (isActive) {
-                            // Remove from wishlist - need to get wishlist ID first
-                            // For now, just toggle UI
-                            button.classList.remove('active');
-                            const icon = button.querySelector('i');
-                            icon.classList.remove('fas');
-                            icon.classList.add('far');
-                        } else {
-                            // Add to wishlist
-                            const response = await fetch(`/customer/wishlist/add/${productId}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                }
-                            });
-
-                            if (response.ok) {
-                                button.classList.add('active');
-                                const icon = button.querySelector('i');
-                                icon.classList.add('fas');
-                                icon.classList.remove('far');
-
-                                // Show success message
-                                if (typeof CartManager !== 'undefined') {
-                                    CartManager.showSuccessModal('Added to wishlist!');
-                                } else {
-                                    alert('Added to wishlist!');
-                                }
-                            } else {
-                                const data = await response.json();
-                                alert(data.message || 'Failed to add to wishlist');
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Wishlist error:', error);
-                        alert('An error occurred. Please try again.');
-                    }
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Failed to add to wishlist');
                 }
+            }
+        } catch (error) {
+            console.error('Wishlist error:', error);
+            alert('An error occurred. Please try again.');
+        }
+        }
     </script>
-
 @endsection
