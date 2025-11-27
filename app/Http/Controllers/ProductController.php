@@ -442,4 +442,55 @@ class ProductController extends Controller
         // For now, store same image - you can use Intervention Image for proper thumbnails
         return $file->store($path, 'public');
     }
+
+    /**
+     * API: Get product variants
+     */
+    public function getVariants($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        if ($product->product_type !== 'variable') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This product does not have variants'
+            ], 400);
+        }
+
+        $variants = $product->variants()
+            ->with('options.type')
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($variant) use ($product) {
+                return [
+                    'id' => $variant->id,
+                    'name' => $variant->name,
+                    'sku' => $variant->sku,
+                    'regular_price' => $variant->price ?? $product->regular_price,
+                    'sale_price' => $variant->sale_price ?? $product->sale_price,
+                    'stock_quantity' => $variant->stock_quantity,
+                    'image' => $variant->image,
+                    'options' => $variant->options->map(function ($option) {
+                        return [
+                            'type_id' => $option->variant_type_id,
+                            'type_name' => $option->type->name ?? 'Option',
+                            'name' => $option->value,
+                            'color_code' => $option->color_code,
+                        ];
+                    })
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'variants' => $variants
+        ]);
+    }
 }

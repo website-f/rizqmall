@@ -241,23 +241,37 @@ class AuthController extends Controller
         if (!$user) {
             return back()
                 ->withInput($request->only('email'))
-                ->with('error', 'No account found. Please login through the subscription system first.');
+                ->with('error', 'No account found with this email address.');
         }
 
-        // Verify with subscription system
+        // Check if user has a password set (for local auth)
+        if (!$user->password) {
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'This account uses SSO login. Please login through the Sandbox system.');
+        }
+
+        // Verify password
+        if (!Hash::check($request->password, $user->password)) {
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'Invalid password. Please try again.');
+        }
+
         try {
-            // Here you would validate credentials with subscription system
-            // For now, we'll just check if user has active subscription
-            $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
+            // For vendors with SSO auth, verify subscription status
+            if ($user->user_type === 'vendor' && $user->auth_type === 'sso' && $user->subscription_user_id) {
+                $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
 
-            if (!$subscriptionStatus) {
-                return back()->with('error', 'Unable to verify your account. Please try logging in through the subscription system.');
-            }
+                if (!$subscriptionStatus) {
+                    return back()->with('error', 'Unable to verify your vendor account. Please login through the Sandbox system.');
+                }
 
-            // For vendors, require active subscription
-            if ($user->is_vendor && $subscriptionStatus['status'] !== 'active') {
-                return redirect()->route('subscription.expired')
-                    ->with('error', 'Your subscription has expired.');
+                // Require active subscription for vendors
+                if ($subscriptionStatus['status'] !== 'active') {
+                    return redirect()->route('subscription.expired')
+                        ->with('error', 'Your vendor subscription has expired. Please renew to continue.');
+                }
             }
 
             // Log the user in
@@ -282,6 +296,17 @@ class AuthController extends Controller
                 'subscription_user_id' => $user->subscription_user_id,
                 'session_id' => $sessionId,
                 'user_type' => $user->user_type,
+            ]);
+
+            // Merge guest cart if exists
+            if (session()->has('guest_cart_id')) {
+                $this->mergeGuestCart($user);
+            }
+
+            Log::info('User logged in successfully', [
+                'user_id' => $user->id,
+                'user_type' => $user->user_type,
+                'auth_type' => $user->auth_type,
             ]);
 
             return $this->redirectAfterLogin($user);

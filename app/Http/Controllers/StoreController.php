@@ -242,18 +242,67 @@ class StoreController extends Controller
     /**
      * Show all stores
      */
-    public function stores()
+    public function stores(Request $request)
     {
-        $stores = Store::with(['category'])
-            ->withCount(['products' => function ($query) {
-                $query->where('status', 'published');
+        $query = Store::with(['category'])
+            ->withCount(['products' => function ($q) {
+                $q->where('status', 'published');
             }])
             ->where('is_active', true)
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->paginate(12);
+            ->where('status', 'active');
 
-        return view('store.stores', compact('stores'));
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('location', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('products', function ($productQuery) use ($searchTerm) {
+                        $productQuery->where('name', 'like', "%{$searchTerm}%")
+                            ->orWhere('description', 'like', "%{$searchTerm}%");
+                    });
+            });
+        }
+
+        // Category filter
+        if ($request->filled('category')) {
+            $query->where('store_category_id', $request->category);
+        }
+
+        // Location filter
+        if ($request->filled('location')) {
+            $query->where('location', 'like', "%{$request->location}%");
+        }
+
+        // Verified filter
+        if ($request->filled('verified') && $request->verified == '1') {
+            $query->where('is_verified', true);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort', 'name');
+        switch ($sortBy) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('products_count', 'desc');
+                break;
+            case 'rating':
+                // Placeholder for when rating system is implemented
+                $query->orderBy('name');
+                break;
+            default:
+                $query->orderBy('name');
+        }
+
+        $stores = $query->paginate(12)->appends($request->except('page'));
+
+        // Get categories for filter dropdown
+        $categories = \App\Models\StoreCategory::orderBy('name')->get();
+
+        return view('store.stores', compact('stores', 'categories'));
     }
 
     /**

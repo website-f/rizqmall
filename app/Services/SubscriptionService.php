@@ -44,7 +44,6 @@ class SubscriptionService
 
             $userData = $response->json('data');
             return $this->updateOrCreateLocalUser($userData);
-
         } catch (\Exception $e) {
             Log::error('Error syncing user from subscription system', [
                 'user_id' => $subscriptionUserId,
@@ -96,8 +95,16 @@ class SubscriptionService
      */
     public function verifySubscription($subscriptionUserId)
     {
+        // If no subscription user ID, return default active status (for local customers)
+        if (!$subscriptionUserId) {
+            return [
+                'status' => 'active',
+                'type' => 'local',
+            ];
+        }
+
         $cacheKey = "subscription_status_{$subscriptionUserId}";
-        
+
         return Cache::remember($cacheKey, 300, function () use ($subscriptionUserId) {
             try {
                 $response = Http::timeout($this->timeout)
@@ -143,7 +150,6 @@ class SubscriptionService
                 ]);
 
             return $response->successful() ? $response->json('data') : null;
-
         } catch (\Exception $e) {
             Log::error('Error validating token', [
                 'error' => $e->getMessage(),
@@ -158,7 +164,7 @@ class SubscriptionService
     public function getUserProfile($subscriptionUserId)
     {
         $cacheKey = "user_profile_{$subscriptionUserId}";
-        
+
         return Cache::remember($cacheKey, 600, function () use ($subscriptionUserId) {
             try {
                 $response = Http::timeout($this->timeout)
@@ -169,7 +175,6 @@ class SubscriptionService
                     ->get("{$this->baseUrl}/api/users/{$subscriptionUserId}/profile");
 
                 return $response->successful() ? $response->json('data') : null;
-
             } catch (\Exception $e) {
                 Log::error('Error fetching user profile', [
                     'user_id' => $subscriptionUserId,
@@ -203,7 +208,6 @@ class SubscriptionService
                     'status' => $response->status(),
                 ]);
             }
-
         } catch (\Exception $e) {
             Log::warning('Failed to notify subscription system', [
                 'event' => $event,
