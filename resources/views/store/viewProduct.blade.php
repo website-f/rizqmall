@@ -850,42 +850,41 @@
             return;
         @endguest
 
-        const isActive = button.classList.contains('active');
-
         try {
-            if (isActive) {
-                // Remove from wishlist - need to get wishlist ID first
-                // For now, just toggle UI
-                button.classList.remove('active');
-                const icon = button.querySelector('i');
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-            } else {
-                // Add to wishlist
-                const response = await fetch(`/customer/wishlist/add/${productId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                });
+            const response = await fetch(`/customer/wishlist/add/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            });
 
-                if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
+                const icon = button.querySelector('i');
+
+                if (data.in_wishlist) {
+                    // Added to wishlist
                     button.classList.add('active');
-                    const icon = button.querySelector('i');
                     icon.classList.add('fas');
                     icon.classList.remove('far');
-
-                    // Show success message
-                    if (typeof CartManager !== 'undefined') {
-                        CartManager.showSuccessModal('Added to wishlist!');
-                    } else {
-                        alert('Added to wishlist!');
-                    }
                 } else {
-                    const data = await response.json();
-                    alert(data.message || 'Failed to add to wishlist');
+                    // Removed from wishlist
+                    button.classList.remove('active');
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
                 }
+
+                // Show success message
+                if (typeof CartManager !== 'undefined') {
+                    CartManager.showSuccessModal(data.message);
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                alert(data.message || 'Failed to update wishlist');
             }
         } catch (error) {
             console.error('Wishlist error:', error);

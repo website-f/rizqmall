@@ -236,7 +236,13 @@ class StoreController extends Controller
             ->limit(12)
             ->get();
 
-        return view('store.home', compact('storeCategories', 'featuredProducts'));
+        // Get user's wishlist product IDs
+        $wishlistProductIds = [];
+        if (auth()->check()) {
+            $wishlistProductIds = auth()->user()->wishlists()->pluck('product_id')->toArray();
+        }
+
+        return view('store.home', compact('storeCategories', 'featuredProducts', 'wishlistProductIds'));
     }
 
     /**

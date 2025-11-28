@@ -127,28 +127,40 @@ class CustomerDashboardController extends Controller
     }
 
     /**
-     * Add product to wishlist
+     * Add product to wishlist (toggle)
      */
     public function addToWishlist(Request $request, Product $product)
     {
         $user = Auth::user();
 
         // Check if already in wishlist
-        $exists = $user->wishlists()->where('product_id', $product->id)->exists();
+        $wishlistItem = $user->wishlists()->where('product_id', $product->id)->first();
 
-        if ($exists) {
+        if ($wishlistItem) {
+            // Remove from wishlist
+            $wishlistItem->delete();
+
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Product is already in your wishlist.'], 200);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product removed from wishlist.',
+                    'in_wishlist' => false
+                ], 200);
             }
-            return redirect()->back()->with('info', 'Product is already in your wishlist.');
+            return redirect()->back()->with('success', 'Product removed from wishlist.');
         }
 
+        // Add to wishlist
         $user->wishlists()->create([
             'product_id' => $product->id,
         ]);
 
         if ($request->wantsJson()) {
-            return response()->json(['message' => 'Product added to wishlist!'], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to wishlist!',
+                'in_wishlist' => true
+            ], 200);
         }
 
         return redirect()->back()->with('success', 'Product added to wishlist!');

@@ -125,14 +125,22 @@
                                                         <div
                                                             class="border border-1 border-translucent rounded-3 position-relative mb-3">
                                                             {{-- Wishlist Button --}}
+                                                            @php
+                                                                $inWishlist = in_array(
+                                                                    $product->id,
+                                                                    $wishlistProductIds ?? [],
+                                                                );
+                                                            @endphp
                                                             <button
-                                                                class="btn btn-wish btn-wish-primary z-2 d-toggle-container"
+                                                                class="btn btn-wish btn-wish-primary z-2 d-toggle-container {{ $inWishlist ? 'active' : '' }}"
                                                                 data-bs-toggle="tooltip" data-bs-placement="top"
-                                                                title="Add to wishlist"
+                                                                title="{{ $inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}"
                                                                 onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)">
-                                                                <span class="fas fa-heart d-block-hover"
+                                                                <span
+                                                                    class="fas fa-heart {{ $inWishlist ? 'd-block-hover' : 'd-none-hover' }}"
                                                                     data-fa-transform="down-1"></span>
-                                                                <span class="far fa-heart d-none-hover"
+                                                                <span
+                                                                    class="far fa-heart {{ $inWishlist ? 'd-none-hover' : 'd-block-hover' }}"
                                                                     data-fa-transform="down-1"></span>
                                                             </button>
 
@@ -446,7 +454,6 @@
 
         const heartFull = button.querySelector('.fas.fa-heart');
         const heartEmpty = button.querySelector('.far.fa-heart');
-        const isAdding = heartFull.classList.contains('d-block-hover');
 
         // Make API call to toggle wishlist
         fetch(`/customer/wishlist/add/${productId}`, {
@@ -460,18 +467,20 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Toggle heart icons
-                    if (isAdding) {
+                    // Toggle heart icons based on wishlist status
+                    if (data.in_wishlist) {
+                        // Added to wishlist - show filled heart
+                        heartFull.classList.remove('d-none-hover');
+                        heartFull.classList.add('d-block-hover');
+                        heartEmpty.classList.remove('d-block-hover');
+                        heartEmpty.classList.add('d-none-hover');
+                        button.classList.add('active');
+                    } else {
+                        // Removed from wishlist - show empty heart
                         heartFull.classList.remove('d-block-hover');
                         heartFull.classList.add('d-none-hover');
                         heartEmpty.classList.remove('d-none-hover');
                         heartEmpty.classList.add('d-block-hover');
-                        button.classList.add('active');
-                    } else {
-                        heartFull.classList.add('d-block-hover');
-                        heartFull.classList.remove('d-none-hover');
-                        heartEmpty.classList.add('d-none-hover');
-                        heartEmpty.classList.remove('d-block-hover');
                         button.classList.remove('active');
                     }
 

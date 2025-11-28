@@ -402,7 +402,13 @@ class ProductController extends Controller
 
         $products = $query->paginate(12);
 
-        return view('store.allProducts', compact('products'));
+        // Get user's wishlist product IDs
+        $wishlistProductIds = [];
+        if (auth()->check()) {
+            $wishlistProductIds = auth()->user()->wishlists()->pluck('product_id')->toArray();
+        }
+
+        return view('store.allProducts', compact('products', 'wishlistProductIds'));
     }
 
     /**
