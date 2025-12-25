@@ -17,12 +17,12 @@
     <!-- ===============================================-->
     <!--    Favicons-->
     <!-- ===============================================-->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/favicons/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/favicons/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/favicons/favicon-16x16.png') }}">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/img/favicons/favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/rizqmall.jpeg') }}">
+    <link rel="icon" type="image/jpeg" sizes="32x32" href="{{ asset('assets/rizqmall.jpeg') }}">
+    <link rel="icon" type="image/jpeg" sizes="16x16" href="{{ asset('assets/rizqmall.jpeg') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/rizqmall.jpeg') }}">
     <link rel="manifest" href="{{ asset('assets/img/favicons/manifest.json') }}">
-    <meta name="msapplication-TileImage" content="{{ asset('assets/img/favicons/mstile-150x150.png') }}">
+    <meta name="msapplication-TileImage" content="{{ asset('assets/rizqmall.jpeg') }}">
     <meta name="theme-color" content="#ffffff">
     <script src="{{ asset('vendors/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/js/config.js') }}"></script>
@@ -401,6 +401,78 @@
                 justify-content: space-between;
             }
         }
+
+        /* Toaster Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100000;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            min-width: 300px;
+            max-width: 400px;
+            border-left: 4px solid transparent;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            border-left-color: #10b981;
+        }
+
+        .toast-error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .toast-success .toast-icon {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .toast-error .toast-icon {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            color: #6b7280;
+        }
     </style>
     <script>
         var phoenixIsRTL = window.config.config.phoenixIsRTL;
@@ -463,135 +535,135 @@
                                     </li>
 
                                     {{-- Cart Icon --}}
-                                    <li class="nav-item">
-                                        <a class="nav-link px-2 icon-indicator icon-indicator-primary"
+                                    <li class="nav-item position-relative">
+                                        <a class="nav-link px-2"
                                             href="{{ route('cart.index') }}" role="button">
                                             <span class="text-body-tertiary" data-feather="shopping-cart"
                                                 style="height:20px;width:20px;"></span>
-                                            <span class="icon-indicator-number" id="cart-count-badge"
-                                                style="display: none;">0</span>
+                                            <span class="cart-count-badge" id="cart-count-badge" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); display: {{ (isset($cartCount) && $cartCount > 0) ? 'flex' : 'none' }};">{{ $cartCount ?? 0 }}</span>
                                         </a>
                                     </li>
 
                                     {{-- User Profile / Login --}}
                                     @auth
-                                        <li class="nav-item dropdown">
-                                            <a class="nav-link px-2" id="navbarDropdownUser" href="#"
-                                                role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                                                aria-haspopup="true" aria-expanded="false">
-                                                <span class="text-body-tertiary" data-feather="user"
-                                                    style="height:20px;width:20px;"></span>
-                                            </a>
-                                            <div class="dropdown-menu dropdown-menu-end navbar-dropdown-caret py-0 dropdown-profile shadow border mt-2"
-                                                aria-labelledby="navbarDropdownUser">
-                                                <div class="card position-relative border-0">
-                                                    <div class="card-body p-0">
-                                                        <div class="text-center pt-4 pb-3">
-                                                            <div class="avatar avatar-xl">
-                                                                @if (auth()->user()->avatar)
-                                                                    <img class="rounded-circle"
-                                                                        src="{{ auth()->user()->avatar }}"
-                                                                        alt="{{ auth()->user()->name }}" />
-                                                                @else
-                                                                    <img class="rounded-circle"
-                                                                        src="{{ asset('defUse.jpg') }}"
-                                                                        alt="{{ auth()->user()->name }}" />
-                                                                @endif
-                                                            </div>
-                                                            <h6 class="mt-2 text-body-emphasis">{{ auth()->user()->name }}
-                                                            </h6>
-                                                            <p class="text-body-tertiary text-xs">
-                                                                {{ ucfirst(auth()->user()->user_type ?? 'Customer') }}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="overflow-auto scrollbar" style="max-height: 10rem;">
-                                                        <ul class="nav d-flex flex-column mb-2 pb-1">
-                                                            @if (auth()->user()->user_type === 'vendor')
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('vendor.dashboard') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="pie-chart"></span>
-                                                                        <span>Dashboard</span>
-                                                                    </a>
-                                                                </li>
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('vendor.store.edit') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="settings"></span>
-                                                                        Store Settings
-                                                                    </a>
-                                                                </li>
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('vendor.orders.index') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="package"></span>
-                                                                        Orders
-                                                                    </a>
-                                                                </li>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link px-2" id="navbarDropdownUser" href="#"
+                                            role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                            aria-haspopup="true" aria-expanded="false">
+                                            <span class="text-body-tertiary" data-feather="user"
+                                                style="height:20px;width:20px;"></span>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-end navbar-dropdown-caret py-0 dropdown-profile shadow border mt-2"
+                                            aria-labelledby="navbarDropdownUser">
+                                            <div class="card position-relative border-0">
+                                                <div class="card-body p-0">
+                                                    <div class="text-center pt-4 pb-3">
+                                                        <div class="avatar avatar-xl">
+                                                            @if (auth()->user()->avatar)
+                                                            <img class="rounded-circle"
+                                                                src="{{ auth()->user()->avatar }}"
+                                                                alt="{{ auth()->user()->name }}" />
                                                             @else
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('customer.dashboard') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="user"></span>
-                                                                        <span>Profile</span>
-                                                                    </a>
-                                                                </li>
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('customer.orders.index') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="package"></span>
-                                                                        My Orders
-                                                                    </a>
-                                                                </li>
-                                                                <li class="nav-item">
-                                                                    <a class="nav-link px-3 d-block"
-                                                                        href="{{ route('customer.wishlist') }}">
-                                                                        <span class="me-2 text-body align-bottom"
-                                                                            data-feather="heart"></span>
-                                                                        Wishlist
-                                                                    </a>
-                                                                </li>
+                                                            <img class="rounded-circle"
+                                                                src="{{ asset('defUse.jpg') }}"
+                                                                alt="{{ auth()->user()->name }}" />
                                                             @endif
-                                                        </ul>
+                                                        </div>
+                                                        <h6 class="mt-2 text-body-emphasis">{{ auth()->user()->name }}
+                                                        </h6>
+                                                        <p class="text-body-tertiary text-xs">
+                                                            {{ ucfirst(auth()->user()->user_type ?? 'Customer') }}
+                                                        </p>
                                                     </div>
-                                                    <div class="card-footer p-0 border-top border-translucent">
-                                                        <div class="px-3 my-2">
-                                                            <form method="POST" action="{{ route('auth.logout') }}">
-                                                                @csrf
-                                                                <button type="submit"
-                                                                    class="btn btn-phoenix-secondary d-flex flex-center w-100">
-                                                                    <span class="me-2"
-                                                                        data-feather="log-out"></span>Sign out
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                        <div class="my-2 text-center fw-bold fs-10 text-body-quaternary">
-                                                            <a class="text-body-quaternary me-1" href="#!">Privacy
-                                                                policy</a>&bull;
-                                                            <a class="text-body-quaternary mx-1"
-                                                                href="#!">Terms</a>&bull;
-                                                            <a class="text-body-quaternary ms-1"
-                                                                href="#!">Cookies</a>
-                                                        </div>
+                                                </div>
+                                                <div class="overflow-auto scrollbar" style="max-height: 10rem;">
+                                                    <ul class="nav d-flex flex-column mb-2 pb-1">
+                                                        @if (auth()->user()->user_type === 'vendor')
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('vendor.dashboard') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="pie-chart"></span>
+                                                                <span>Dashboard</span>
+                                                            </a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('vendor.store.edit') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="settings"></span>
+                                                                Store Settings
+                                                            </a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('vendor.orders.index') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="package"></span>
+                                                                Orders
+                                                            </a>
+                                                        </li>
+                                                        @else
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('customer.dashboard') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="user"></span>
+                                                                <span>Profile</span>
+                                                            </a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('customer.orders.index') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="package"></span>
+                                                                My Orders
+                                                            </a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
+                                                                href="{{ route('customer.wishlist') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="heart"></span>
+                                                                Wishlist
+                                                            </a>
+                                                        </li>
+                                                        @endif
+                                                    </ul>
+                                                </div>
+                                                <div class="card-footer p-0 border-top border-translucent">
+                                                    <div class="px-3 my-2">
+                                                        <form method="POST" action="{{ route('auth.logout') }}">
+                                                            @csrf
+                                                            <button type="submit"
+                                                                class="btn btn-phoenix-secondary d-flex flex-center w-100">
+                                                                <span class="me-2"
+                                                                    data-feather="log-out"></span>Sign out
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <div class="my-2 text-center fw-bold fs-10 text-body-quaternary">
+                                                        <a class="text-body-quaternary me-1" href="#!">Privacy
+                                                            policy</a>&bull;
+                                                        <a class="text-body-quaternary mx-1"
+                                                            href="#!">Terms</a>&bull;
+                                                        <a class="text-body-quaternary ms-1"
+                                                            href="#!">Cookies</a>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </li>
+                                        </div>
+                                    </li>
                                     @else
-                                        {{-- Login Button for Guests --}}
-                                        <li class="nav-item">
-                                            <a class="nav-link px-2" href="{{ route('login') }}"
-                                                data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                                title="Login with Sandbox">
-                                                <span class="text-body-tertiary" data-feather="log-in"
-                                                    style="height:20px;width:20px;"></span>
-                                            </a>
-                                        </li>
+                                    {{-- Login Button for Guests --}}
+                                    <li class="nav-item">
+                                        <a class="nav-link px-2" href="{{ route('login') }}"
+                                            data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                            title="Login with Sandbox">
+                                            <span class="text-body-tertiary" data-feather="log-in"
+                                                style="height:20px;width:20px;"></span>
+                                        </a>
+                                    </li>
                                     @endauth
                                 </ul>
                             </div>
@@ -1015,14 +1087,6 @@
                 }
             },
 
-            updateCartCount(count) {
-                const cartBadge = document.getElementById('cart-count-badge');
-                if (cartBadge) {
-                    cartBadge.textContent = count;
-                    cartBadge.style.display = count > 0 ? 'flex' : 'none';
-                }
-            },
-
             async loadCartCount() {
                 try {
                     const response = await fetch('/cart/count');
@@ -1033,46 +1097,27 @@
                 }
             },
 
-            showSuccessModal(message) {
-                const modal = document.createElement('div');
-                modal.className = 'cart-modal success-modal';
-                modal.innerHTML = `
-                    <div class="cart-modal-content">
-                        <div class="success-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <h4>Success!</h4>
-                        <p>${message}</p>
-                    </div>
-                `;
-                document.body.appendChild(modal);
+            updateCartCount(count) {
+                const badge = document.getElementById('cart-count-badge');
+                if (badge) {
+                    badge.innerText = count;
+                    badge.style.display = parseInt(count) > 0 ? 'flex' : 'none';
+                    // Animation
+                    if (parseInt(count) > 0) {
+                        badge.style.transform = 'scale(1.2)';
+                        setTimeout(() => badge.style.transform = 'scale(1)', 200);
+                    }
+                }
+            },
 
-                setTimeout(() => modal.classList.add('show'), 10);
-                setTimeout(() => {
-                    modal.classList.remove('show');
-                    setTimeout(() => modal.remove(), 300);
-                }, 2000);
+            showSuccessModal(message) {
+                // Use Toast instead of Modal
+                showToast('Success', message, 'success');
             },
 
             showErrorModal(message) {
-                const modal = document.createElement('div');
-                modal.className = 'cart-modal error-modal';
-                modal.innerHTML = `
-                    <div class="cart-modal-content">
-                        <div class="error-icon">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <h4>Error</h4>
-                        <p>${message}</p>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-
-                setTimeout(() => modal.classList.add('show'), 10);
-                setTimeout(() => {
-                    modal.classList.remove('show');
-                    setTimeout(() => modal.remove(), 300);
-                }, 3000);
+                // Use Toast instead of Modal
+                showToast('Error', message, 'error');
             }
         };
 
@@ -1125,6 +1170,52 @@
     </script>
     @stack('scripts')
 
+    <!-- Toaster Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            let icon = type === 'success' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger reflow
+            toast.offsetHeight;
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Listen for session flashes
+        @if(session('success'))
+        document.addEventListener('DOMContentLoaded', () => {
+            showToast('Success', "{{ session('success') }}", 'success');
+        });
+        @endif
+        @if(session('error'))
+        document.addEventListener('DOMContentLoaded', () => {
+            showToast('Error', "{{ session('error') }}", 'error');
+        });
+        @endif
+    </script>
 </body>
 
 </html>
