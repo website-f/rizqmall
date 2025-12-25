@@ -32,7 +32,11 @@ class User extends Authenticatable
         'preferences',
         'last_login_ip',
         'last_login_at',
+        'last_login_at',
         'last_sync_at',
+        'country',
+        'state',
+        'city',
     ];
 
     protected $hidden = [

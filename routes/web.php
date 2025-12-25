@@ -160,9 +160,17 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
         Route::post('/process', [CheckoutController::class, 'process'])->name('process');
-        Route::get('/success/{order}', [CheckoutController::class, 'success'])->name('success');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Payment Callback Routes (Public - No Auth Required)
+| ToyyibPay needs to call these endpoints directly
+|--------------------------------------------------------------------------
+*/
+Route::post('/checkout/callback', [CheckoutController::class, 'callback'])->name('checkout.callback');
+Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 
 /*
 |--------------------------------------------------------------------------

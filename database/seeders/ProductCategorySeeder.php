@@ -14,7 +14,7 @@ class ProductCategorySeeder extends Seeder
      */
     public function run(): void
     {
-         $marketplace = StoreCategory::where('slug', 'marketplace')->first();
+        $marketplace = StoreCategory::where('slug', 'marketplace')->first();
         $services = StoreCategory::where('slug', 'services')->first();
         $pharmacy = StoreCategory::where('slug', 'pharmacy')->first();
 
@@ -56,8 +56,21 @@ class ProductCategorySeeder extends Seeder
             ['name' => 'Diabetes Care', 'slug' => 'diabetes-care', 'store_category_id' => $pharmacy->id, 'sort_order' => 8],
         ];
 
+        // Food & Catering Categories
+        $foodCatering = StoreCategory::where('slug', 'food-catering')->first();
+        $foodCategories = [
+            ['name' => 'Malay Cuisine', 'slug' => 'malay-cuisine', 'store_category_id' => $foodCatering->id, 'sort_order' => 1],
+            ['name' => 'Chinese Cuisine', 'slug' => 'chinese-cuisine', 'store_category_id' => $foodCatering->id, 'sort_order' => 2],
+            ['name' => 'Indian Cuisine', 'slug' => 'indian-cuisine', 'store_category_id' => $foodCatering->id, 'sort_order' => 3],
+            ['name' => 'Western Food', 'slug' => 'western-food', 'store_category_id' => $foodCatering->id, 'sort_order' => 4],
+            ['name' => 'Fast Food', 'slug' => 'fast-food', 'store_category_id' => $foodCatering->id, 'sort_order' => 5],
+            ['name' => 'Beverages', 'slug' => 'beverages', 'store_category_id' => $foodCatering->id, 'sort_order' => 6],
+            ['name' => 'Desserts', 'slug' => 'desserts', 'store_category_id' => $foodCatering->id, 'sort_order' => 7],
+            ['name' => 'Catering Services', 'slug' => 'catering-services', 'store_category_id' => $foodCatering->id, 'sort_order' => 8],
+        ];
+
         // Create all categories
-        foreach (array_merge($marketplaceCategories, $servicesCategories, $pharmacyCategories) as $category) {
+        foreach (array_merge($marketplaceCategories, $servicesCategories, $pharmacyCategories, $foodCategories) as $category) {
             ProductCategory::create($category);
         }
 

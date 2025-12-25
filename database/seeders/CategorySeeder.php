@@ -69,7 +69,7 @@ class CategorySeeder extends Seeder
                 'slug' => 'food-catering',
                 'icon' => 'uil uil-gift',
                 'description' => 'Food delivery and catering services',
-                'is_active' => false,
+                'is_active' => true,
                 'sort_order' => 7,
             ],
             [

@@ -49,15 +49,15 @@ class OrderItem extends Model
     }
 
     // Accessors
-    public function getLineTotal Attribute()
+    public function getLineTotalAttribute()
     {
         return $this->price * $this->quantity;
     }
 
     public function getDisplayNameAttribute()
     {
-        return $this->variant_name 
-            ? "{$this->product_name} - {$this->variant_name}" 
+        return $this->variant_name
+            ? "{$this->product_name} - {$this->variant_name}"
             : $this->product_name;
     }
 }
