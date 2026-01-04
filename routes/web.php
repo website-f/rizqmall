@@ -10,6 +10,7 @@ use App\Http\Controllers\VendorDashboardController;
 use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\ProfileController; // Class name in ProfileDashboardController.php
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\VendorMemberController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,24 @@ Route::post('/register', [AuthController::class, 'register'])->name('customer.re
 Route::get('/', [StoreController::class, 'home'])->name('rizqmall.home');
 Route::get('/stores', [StoreController::class, 'stores'])->name('stores');
 Route::get('/stores/{store:slug}', [StoreController::class, 'showProfile'])->name('store.profile');
+
+// Vendor Member Routes (Public - for QR code scans)
+Route::get('/join/{code}', [VendorMemberController::class, 'joinByQr'])->name('vendor.member.join.qr');
+
+// Vendor Member Routes (Requires Auth)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/stores/{store}/join', [VendorMemberController::class, 'joinStore'])->name('vendor.member.join');
+    Route::post('/member/join-by-code', [VendorMemberController::class, 'joinByCode'])->name('vendor.member.join.code');
+    Route::get('/stores/{store}/membership-status', [VendorMemberController::class, 'getMembershipStatus'])->name('vendor.member.status');
+    Route::get('/my-memberships', [VendorMemberController::class, 'getMyMemberships'])->name('vendor.member.my-memberships');
+});
+
+// Vendor Member Routes (For Store Owners)
+Route::middleware(['auth', 'verify.vendor'])->group(function () {
+    Route::get('/vendor/store/{store}/members', [VendorMemberController::class, 'getMembers'])->name('vendor.members.list');
+    Route::get('/vendor/store/{store}/qr-code', [VendorMemberController::class, 'getQrCode'])->name('vendor.member.qr');
+    Route::get('/vendor/store/{store}/ref-code', [VendorMemberController::class, 'getRefCode'])->name('vendor.member.ref-code');
+});
 
 // Products
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -83,7 +102,7 @@ Route::middleware(['auth', 'verify.vendor'])->group(function () {
         // Store Management
         Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
         Route::put('/store/update', [StoreController::class, 'update'])->name('store.update');
-        Route::post('/store/change-banner', [StoreController::class, 'changeBanner'])->name('store.changeBanner');
+        Route::post('/store/{store}/change-banner', [StoreController::class, 'changeBanner'])->name('store.changeBanner');
         Route::post('/store/change-logo', [StoreController::class, 'changeLogo'])->name('store.changeLogo');
 
         // Product Management

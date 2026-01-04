@@ -96,6 +96,25 @@ class User extends Authenticatable
         return $this->belongsToMany(Store::class, 'store_followers', 'user_id', 'store_id');
     }
 
+    /**
+     * Get all stores the user is a member of (as customer)
+     */
+    public function vendorMemberships()
+    {
+        return $this->hasMany(VendorMember::class, 'customer_id');
+    }
+
+    /**
+     * Check if user is a member of a specific store
+     */
+    public function isMemberOf(Store $store): bool
+    {
+        return $this->vendorMemberships()
+            ->where('store_id', $store->id)
+            ->where('status', 'active')
+            ->exists();
+    }
+
     // Scopes
     public function scopeVendors($query)
     {

@@ -141,6 +141,14 @@ class Product extends Model
         return $image ? $image->url : asset('images/product-placeholder.png');
     }
 
+    public function getPriceAttribute()
+    {
+        if ($this->sale_price && $this->sale_price > 0) {
+            return $this->sale_price;
+        }
+        return $this->regular_price;
+    }
+
     public function getOnSaleAttribute()
     {
         return $this->sale_price && $this->sale_price < $this->regular_price;

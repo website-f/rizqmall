@@ -797,7 +797,7 @@
             </div>
             @endif
 
-            @if (session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
+            @if (auth()->check() && auth()->id() == $store->user_id)
             <button class="banner-edit-btn" data-bs-toggle="modal" data-bs-target="#changeBannerModal">
                 <i class="fas fa-camera me-2"></i>Change Banner
             </button>
@@ -893,7 +893,7 @@
                     @endif
 
                     {{-- Owner Actions --}}
-                    @if (session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
+                    @if (auth()->check() && auth()->id() == $store->user_id)
                     <div class="store-actions">
                         <a href="{{ route('products.create', ['store' => $store->id]) }}"
                             class="btn-action btn-primary-action">
@@ -905,6 +905,38 @@
                             <i class="fas fa-edit"></i>
                             Edit Store
                         </button>
+                        <button class="btn-action btn-primary-action" onclick="showMemberQrCode()">
+                            <i class="fas fa-qrcode"></i>
+                            Member QR
+                        </button>
+                    </div>
+                    @else
+                    {{-- Customer Actions --}}
+                    <div class="store-actions">
+                        @auth
+                        @php
+                        $isMember = auth()->user()->isMemberOf($store);
+                        @endphp
+                        @if($isMember)
+                        <button class="btn-action" style="background: #10b981; color: white; cursor: default;">
+                            <i class="fas fa-check-circle"></i>
+                            Store Member
+                        </button>
+                        @else
+                        <form action="{{ route('vendor.member.join', $store->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn-action btn-primary-action">
+                                <i class="fas fa-user-plus"></i>
+                                Join as Member
+                            </button>
+                        </form>
+                        @endif
+                        @else
+                        <a href="{{ route('login') }}" class="btn-action btn-primary-action">
+                            <i class="fas fa-user-plus"></i>
+                            Join as Member
+                        </a>
+                        @endauth
                     </div>
                     @endif
 
@@ -1102,10 +1134,10 @@
 @endif
 
 {{-- Change Banner Modal --}}
-@if (session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
+@if (auth()->check() && auth()->id() == $store->user_id)
 <div class="modal fade" id="changeBannerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form id="bannerDropzoneForm" action="{{ route('store.changeBanner', $store->id) }}" method="POST"
+        <form id="bannerDropzoneForm" action="{{ route('vendor.store.changeBanner', $store->id) }}" method="POST"
             class="modal-content">
             @csrf
             <div class="modal-header">
@@ -1134,6 +1166,46 @@
 </div>
 @endif
 
+{{-- Member QR Code Modal --}}
+<div class="modal fade" id="memberQrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title bg-primary text-white p-3 w-100 rounded-top mb-0" style="margin: -1px -1px 0 -1px;">
+                    <i class="fas fa-qrcode me-2"></i>Member Recruitment QR
+                    <button type="button" class="btn-close btn-close-white float-end" data-bs-dismiss="modal"></button>
+                </h5>
+            </div>
+            <div class="modal-body text-center p-5">
+                <h4 class="mb-3 font-weight-bold text-dark">Recruit New Members</h4>
+                <p class="text-muted mb-4">Ask customers to scan this QR code to join your store as a member.</p>
+
+                <div id="qrCodeContainer" class="mb-4 d-flex justify-content-center align-items-center" style="min-height: 250px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-outline-dark btn-sm" onclick="downloadQrCode()">
+                        <i class="fas fa-download me-2"></i>Download QR Code
+                    </button>
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-light">Referral Code</span>
+                    <input type="text" class="form-control text-center font-weight-bold" id="storeRefCode" readonly>
+                    <button class="btn btn-outline-primary" type="button" onclick="copyRefCode()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+
+                <p class="small text-muted">Status: <span class="badge bg-success">Active</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -1141,106 +1213,118 @@
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-    Dropzone.autoDiscover = false;
+    if (typeof Dropzone !== 'undefined') {
+        Dropzone.autoDiscover = false;
+    }
+
+    // ... (rest of the script)
+
+    // Show Member QR Code
+    function showMemberQrCode() {
+        const modal = new bootstrap.Modal(document.getElementById('memberQrModal'));
+        modal.show();
+
+        // fetch QR code
+        const qrContainer = document.getElementById('qrCodeContainer');
+        const refInput = document.getElementById('storeRefCode');
+
+        // Clear previous QR
+        qrContainer.innerHTML = '';
+
+        // Fetch Ref Code details
+        fetch(`{{ route('vendor.member.ref-code', $store->id) }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    refInput.value = data.ref_code;
+
+                    // Generate QR Code Client-side
+                    new QRCode(qrContainer, {
+                        text: data.join_url,
+                        width: 200,
+                        height: 200,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching QR:', error);
+                qrContainer.innerHTML = '<p class="text-danger">Failed to load info</p>';
+            });
+    }
+
+    // Download QR Code
+    function downloadQrCode() {
+        const qrContainer = document.getElementById('qrCodeContainer');
+        let src = null;
+        const img = qrContainer.querySelector('img');
+        const canvas = qrContainer.querySelector('canvas');
+
+        if (img && img.src) {
+            src = img.src;
+        } else if (canvas) {
+            src = canvas.toDataURL("image/png");
+        }
+
+        if (src) {
+            const link = document.createElement('a');
+            link.href = src;
+            link.download = '{{ $store->slug }}-member-qr.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert('QR Code not ready.');
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Initialize Store Location Map
-        @if($store -> latitude && $store -> longitude)
-        const storeMap = L.map('storeLocationMap').setView([{
-                {
-                    $store - > latitude
+        // Initialize Dropzone for banner upload (only if element exists - for store owners)
+        const bannerDropzoneEl = document.getElementById('bannerDropzone');
+        if (bannerDropzoneEl) {
+            const bannerDropzone = new Dropzone("#bannerDropzone", {
+                url: "{{ route('uploads.temp') }}",
+                paramName: 'file',
+                maxFiles: 1,
+                acceptedFiles: 'image/*',
+                maxFilesize: 5, // MB
+                addRemoveLinks: true,
+                dictDefaultMessage: '',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                init: function() {
+                    this.on("success", function(file, response) {
+                        document.getElementById('banner_path').value = response.path;
+                        document.getElementById('uploadBannerBtn').disabled = false;
+                    });
+                    this.on("removedfile", function() {
+                        document.getElementById('banner_path').value = '';
+                        document.getElementById('uploadBannerBtn').disabled = true;
+                    });
+                    this.on("error", function(file, message) {
+                        alert('Upload failed: ' + message);
+                        this.removeFile(file);
+                    });
                 }
-            },
-            {
-                {
-                    $store - > longitude
-                }
-            }
-        ], 15);
+            });
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-        }).addTo(storeMap);
-
-        // Add store marker
-        const storeIcon = L.divIcon({
-            className: 'custom-store-marker',
-            html: '<div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); width: 40px; height: 40px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"><i class="fas fa-store" style="color: white; transform: rotate(45deg); font-size: 16px;"></i></div>',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
-        });
-
-        const marker = L.marker([{
-            {
-                $store - > latitude
-            }
-        }, {
-            {
-                $store - > longitude
-            }
-        }], {
-            icon: storeIcon
-        }).addTo(storeMap);
-
-        marker.bindPopup(`
-        <div style="text-align: center; padding: 8px;">
-            <h6 style="margin-bottom: 8px; font-weight: 700;">{{ $store->name }}</h6>
-            <p style="margin-bottom: 8px; color: #6b7280; font-size: 13px;">{{ $store->location }}</p>
-            <button onclick="document.getElementById('navigationModalBtn').click()" 
-                    class="btn btn-primary btn-sm">
-                <i class="fas fa-directions me-1"></i>Get Directions
-            </button>
-        </div>
-    `);
-
-        // Hidden button to trigger modal from map popup
-        const hiddenBtn = document.createElement('button');
-        hiddenBtn.id = 'navigationModalBtn';
-        hiddenBtn.setAttribute('data-bs-toggle', 'modal');
-        hiddenBtn.setAttribute('data-bs-target', '#navigationModal');
-        hiddenBtn.style.display = 'none';
-        document.body.appendChild(hiddenBtn);
-        @endif
-
-        // Initialize Dropzone for banner upload
-        const bannerDropzone = new Dropzone("#bannerDropzone", {
-            url: "{{ route('uploads.temp') }}",
-            paramName: 'file',
-            maxFiles: 1,
-            acceptedFiles: 'image/*',
-            maxFilesize: 5, // MB
-            addRemoveLinks: true,
-            dictDefaultMessage: '',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            init: function() {
-                this.on("success", function(file, response) {
-                    document.getElementById('banner_path').value = response.path;
-                    document.getElementById('uploadBannerBtn').disabled = false;
-                });
-                this.on("removedfile", function() {
-                    document.getElementById('banner_path').value = '';
-                    document.getElementById('uploadBannerBtn').disabled = true;
-                });
-                this.on("error", function(file, message) {
-                    alert('Upload failed: ' + message);
-                    this.removeFile(file);
+            // Form submission validation
+            const bannerForm = document.getElementById('bannerDropzoneForm');
+            if (bannerForm) {
+                bannerForm.addEventListener('submit', function(e) {
+                    if (!document.getElementById('banner_path').value) {
+                        e.preventDefault();
+                        alert('Please upload a banner image first.');
+                    }
                 });
             }
-        });
-
-        // Form submission validation
-        document.getElementById('bannerDropzoneForm').addEventListener('submit', function(e) {
-            if (!document.getElementById('banner_path').value) {
-                e.preventDefault();
-                alert('Please upload a banner image first.');
-            }
-        });
+        }
     });
 
     // Wishlist toggle function
@@ -1252,6 +1336,19 @@
 
         // TODO: Implement actual wishlist API call
         console.log('Toggle wishlist for product:', productId);
+    }
+
+
+
+    function copyRefCode() {
+        const copyText = document.getElementById("storeRefCode");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+
+        // Show toaster or alert
+        // assuming standard verify toaster is available or just alert
+        alert("Referral code copied: " + copyText.value);
     }
 </script>
 @endpush

@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Store;
 use App\Models\User;
 use App\Models\UserSession;
+use App\Services\SandboxApiService;
 use App\Services\SubscriptionService;
+use App\Services\VendorMemberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -620,6 +623,26 @@ class AuthController extends Controller
             // Merge guest cart if exists
             if (session()->has('guest_cart_id')) {
                 $this->mergeGuestCart($user);
+            }
+
+            // Check for pending vendor member join
+            if (session()->has('pending_vendor_member')) {
+                $refCode = session('pending_vendor_member');
+                $store = Store::where('member_ref_code', strtoupper($refCode))->first();
+
+                if ($store && $store->user_id !== $user->id) {
+                    try {
+                        $memberService = app(VendorMemberService::class);
+                        $memberService->registerMember($store, $user, 'qr_scan', $refCode);
+                        session()->forget('pending_vendor_member');
+                        Log::info('Joined vendor member after registration', ['user_id' => $user->id, 'store_id' => $store->id]);
+
+                        return redirect()->route('store.profile', $store->slug)
+                            ->with('success', 'Welcome! You have successfully registered and joined the store as a member.');
+                    } catch (\Exception $e) {
+                        Log::error('Failed to join member after registration', ['error' => $e->getMessage()]);
+                    }
+                }
             }
 
             return redirect()->route('rizqmall.home')

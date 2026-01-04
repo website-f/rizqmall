@@ -13,6 +13,7 @@ class Store extends Model
         'store_category_id',
         'name',
         'slug',
+        'member_ref_code',
         'image',
         'banner',
         'ssm_document',
@@ -97,5 +98,21 @@ class Store extends Model
     public function followers()
     {
         return $this->belongsToMany(User::class, 'store_followers', 'store_id', 'user_id');
+    }
+
+    /**
+     * Get all members of this store
+     */
+    public function members()
+    {
+        return $this->hasMany(VendorMember::class);
+    }
+
+    /**
+     * Get active members count
+     */
+    public function getMemberCountAttribute()
+    {
+        return $this->members()->where('status', 'active')->count();
     }
 }
