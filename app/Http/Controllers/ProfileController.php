@@ -126,7 +126,7 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'type' => 'required|in:billing,shipping,both',
+            'type' => 'nullable|in:billing,shipping,both',
             'label' => 'nullable|string|max:100',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
@@ -135,16 +135,38 @@ class ProfileController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'required|string|max:100',
             'postal_code' => 'required|string|max:20',
-            'country' => 'required|string|max:100',
+            'country' => 'nullable|string|max:100',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'is_default' => 'nullable|boolean',
         ]);
 
-        $address = $user->addresses()->create($request->all());
+        $data = $request->all();
+
+        // Set default values
+        if (!isset($data['type'])) {
+            $data['type'] = 'both'; // Can be used for both billing and shipping
+        }
+        if (!isset($data['country'])) {
+            $data['country'] = 'Malaysia';
+        }
+        if (!isset($data['label'])) {
+            $data['label'] = 'Home';
+        }
+
+        $address = $user->addresses()->create($data);
 
         if ($request->has('is_default') && $request->is_default) {
             $address->setAsDefault();
+        }
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Address added successfully!',
+                'address' => $address
+            ]);
         }
 
         return redirect()->back()

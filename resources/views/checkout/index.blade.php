@@ -46,10 +46,13 @@
                                         @if ($address->is_default)
                                         <span class="badge bg-primary mb-2">Default</span>
                                         @endif
-                                        <strong class="d-block">{{ $address->recipient_name }}</strong>
+                                        @if ($address->label)
+                                        <span class="badge bg-secondary mb-2">{{ $address->label }}</span>
+                                        @endif
+                                        <strong class="d-block">{{ $address->full_name }}</strong>
                                         <span class="d-block text-muted small">{{ $address->phone }}</span>
                                         <span class="d-block text-muted small mt-1">
-                                            {{ $address->address_line1 }},
+                                            {{ $address->address_line_1 }}@if($address->address_line_2), {{ $address->address_line_2 }}@endif,
                                             {{ $address->city }}, {{ $address->state }}
                                             {{ $address->postal_code }}
                                         </span>
@@ -323,6 +326,105 @@
         </div>
     </form>
 </div>
+
+{{-- Add Address Modal --}}
+<div class="modal fade" id="addressModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ route('customer.addresses.store') }}" method="POST" id="addAddressForm">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-map-marker-alt me-2"></i>Add New Delivery Address
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="full_name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required
+                                   placeholder="+60123456789">
+                        </div>
+                        <div class="col-12">
+                            <label for="address_line_1" class="form-label">Address Line 1 *</label>
+                            <input type="text" class="form-control" id="address_line_1" name="address_line_1" required
+                                   placeholder="Street address, building name">
+                        </div>
+                        <div class="col-12">
+                            <label for="address_line_2" class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" id="address_line_2" name="address_line_2"
+                                   placeholder="Apartment, suite, unit, floor (optional)">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="city" class="form-label">City *</label>
+                            <input type="text" class="form-control" id="city" name="city" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="postal_code" class="form-label">Postal Code *</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code" required
+                                   placeholder="e.g., 50000">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="state" class="form-label">State *</label>
+                            <select class="form-select" id="state" name="state" required>
+                                <option value="">Select State</option>
+                                <option value="Johor">Johor</option>
+                                <option value="Kedah">Kedah</option>
+                                <option value="Kelantan">Kelantan</option>
+                                <option value="Melaka">Melaka</option>
+                                <option value="Negeri Sembilan">Negeri Sembilan</option>
+                                <option value="Pahang">Pahang</option>
+                                <option value="Penang">Penang</option>
+                                <option value="Perak">Perak</option>
+                                <option value="Perlis">Perlis</option>
+                                <option value="Sabah">Sabah</option>
+                                <option value="Sarawak">Sarawak</option>
+                                <option value="Selangor">Selangor</option>
+                                <option value="Terengganu">Terengganu</option>
+                                <option value="WP Kuala Lumpur">WP Kuala Lumpur</option>
+                                <option value="WP Labuan">WP Labuan</option>
+                                <option value="WP Putrajaya">WP Putrajaya</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="country" class="form-label">Country</label>
+                            <input type="text" class="form-control" id="country" name="country" value="Malaysia" readonly>
+                        </div>
+                        <div class="col-12">
+                            <label for="label" class="form-label">Address Label</label>
+                            <select class="form-select" id="label" name="label">
+                                <option value="Home">Home</option>
+                                <option value="Office">Office</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <small class="text-muted">Label for easy identification</small>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_default" name="is_default" value="1">
+                                <label class="form-check-label" for="is_default">
+                                    Set as default address
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Address
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -342,6 +444,54 @@
 
             shippingFee.textContent = fee === 0 ? 'FREE' : 'RM ' + fee.toFixed(2);
             total.textContent = 'RM ' + (subtotal + fee).toFixed(2);
+        });
+    });
+
+    // Handle add address form submission
+    document.getElementById('addAddressForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addressModal'));
+                modal.hide();
+
+                // Show success message
+                showToast('Success', 'Address added successfully!', 'success');
+
+                // Reload page to show new address
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast('Error', data.message || 'Failed to add address', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error', 'An error occurred. Please try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         });
     });
 </script>

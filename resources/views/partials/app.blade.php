@@ -473,6 +473,17 @@
             font-size: 13px;
             color: #6b7280;
         }
+
+        /* Fix user dropdown z-index to appear above all content */
+        .navbar-dropdown-caret,
+        .dropdown-profile {
+            z-index: 10000 !important;
+        }
+
+        /* Ensure dropdown menus in navigation always appear on top */
+        .navbar .dropdown-menu {
+            z-index: 10000 !important;
+        }
     </style>
     <script>
         var phoenixIsRTL = window.config.config.phoenixIsRTL;
