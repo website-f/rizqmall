@@ -230,12 +230,145 @@ class CustomerDashboardController extends Controller
     /**
      * Display reviews
      */
+    /**
+     * Display reviews
+     */
     public function reviews()
     {
         $user = Auth::user();
 
-        // TODO: Implement reviews functionality
+        $reviews = $user->reviews()
+            ->with(['product', 'store']) // Assuming future relation change or separate table, currently Review has product
+            ->latest()
+            ->paginate(10);
 
-        return view('customer.reviews', compact('user'));
+        return view('customer.reviews', compact('user', 'reviews'));
+    }
+
+    /**
+     * Store a new review
+     */
+    public function storeReview(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'order_id' => 'nullable|exists:orders,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|min:10',
+            'title' => 'nullable|string|max:255',
+            'images' => 'nullable|array',
+            'images.*' => 'image|max:2048' // Max 2MB per image
+        ]);
+
+        // Check if user has already reviewed this product for this order (optional)
+        // Or if verified purchase is required
+
+        $verifiedPurchase = false;
+        if ($request->order_id) {
+            // Verify the order belongs to user and contains the product
+            $order = $user->orders()->where('id', $request->order_id)->first();
+            if ($order) {
+                $hasProduct = $order->items()->where('product_id', $request->product_id)->exists();
+                if ($hasProduct && $order->payment_status === 'paid' && $order->status === 'delivered') {
+                    $verifiedPurchase = true;
+                }
+            }
+        }
+
+        // Handle image uploads if any
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('reviews', 'public');
+                $imagePaths[] = $path;
+            }
+        }
+
+        $review = $user->reviews()->create([
+            'product_id' => $request->product_id,
+            'order_id' => $request->order_id,
+            'rating' => $request->rating,
+            'title' => $request->title,
+            'comment' => $request->comment,
+            'images' => !empty($imagePaths) ? $imagePaths : null,
+            'verified_purchase' => $verifiedPurchase,
+            'is_approved' => true // Auto-approve for now, or false if moderation needed
+        ]);
+
+        $this->updateProductStats($request->product_id);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Review submitted successfully!',
+                'review' => $review
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Review submitted successfully!');
+    }
+    /**
+     * Store a new store review
+     */
+    public function storeStoreReview(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'store_id' => 'required|exists:stores,id',
+            'order_id' => 'nullable|exists:orders,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|min:10',
+            'title' => 'nullable|string|max:255',
+        ]);
+
+        // Verify purchase if order_id is present
+        $verifiedPurchase = false;
+        if ($request->order_id) {
+            $order = $user->orders()->where('id', $request->order_id)->where('store_id', $request->store_id)->first();
+            if ($order && $order->payment_status === 'paid' && $order->status === 'delivered') {
+                $verifiedPurchase = true;
+            }
+        }
+
+        $review = $user->storeReviews()->create([
+            'store_id' => $request->store_id,
+            'order_id' => $request->order_id,
+            'rating' => $request->rating,
+            'title' => $request->title,
+            'comment' => $request->comment,
+            'verified_purchase' => $verifiedPurchase,
+            'is_approved' => true
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Store review submitted successfully!',
+                'review' => $review
+            ]);
+        }
+
+        // Update Store stats
+        $store = \App\Models\Store::find($request->store_id); // Use full namespace or import
+        if ($store) {
+            $store->rating_average = $store->storeReviews()->avg('rating');
+            $store->rating_count = $store->storeReviews()->count();
+            $store->save();
+        }
+
+        return redirect()->back()->with('success', 'Store review submitted successfully!');
+    }
+
+    private function updateProductStats($productId)
+    {
+        $product = Product::find($productId);
+        if ($product) {
+            $product->rating_average = $product->reviews()->avg('rating');
+            $product->rating_count = $product->reviews()->count();
+            $product->save();
+        }
     }
 }

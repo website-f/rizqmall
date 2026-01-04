@@ -130,6 +130,11 @@ class Product extends Model
         return $this->hasMany(Review::class)->where('is_approved', true);
     }
 
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function getPrimaryImageAttribute()
     {
         $image = $this->images()->where('is_primary', true)->first();
@@ -152,7 +157,25 @@ class Product extends Model
         return $this->reviews()->avg('rating') ?? 0;
     }
 
+    /**
+     * Get the average rating from approved reviews
+     * This provides dynamic rating_average based on actual customer reviews
+     */
+    public function getRatingAverageAttribute()
+    {
+        return (float) ($this->reviews()->avg('rating') ?? 0);
+    }
+
     public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
+
+    /**
+     * Get the count of approved reviews
+     * This provides dynamic rating_count based on actual customer reviews
+     */
+    public function getRatingCountAttribute()
     {
         return $this->reviews()->count();
     }

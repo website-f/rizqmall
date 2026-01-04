@@ -22,6 +22,14 @@ class CheckSubscription
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip check for these routes to prevent redirect loops
+        if ($request->routeIs('subscription.expired') ||
+            $request->routeIs('store.select-category') ||
+            $request->routeIs('store.setup') ||
+            $request->routeIs('store.store')) {
+            return $next($request);
+        }
+
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
@@ -35,22 +43,8 @@ class CheckSubscription
             return $next($request);
         }
 
-        // Check subscription status
-        if ($user->subscription_status !== 'active') {
-            return redirect()->route('subscription.expired')
-                ->with('error', 'Your subscription has expired. Please renew to continue.');
-        }
-
-        // Check if subscription is still valid (not expired)
-        if ($user->subscription_expires_at && $user->subscription_expires_at->isPast()) {
-            // Update status
-            $user->subscription_status = 'expired';
-            $user->save();
-
-            return redirect()->route('subscription.expired')
-                ->with('error', 'Your subscription has expired. Please renew to continue.');
-        }
-
+        // Allow vendors to access store setup even without active subscription
+        // They need to be able to create their store first
         return $next($request);
     }
 }

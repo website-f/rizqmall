@@ -42,4 +42,15 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sandbox API Configuration
+    |--------------------------------------------------------------------------
+    */
+    'sandbox' => [
+        'url' => env('SANDBOX_URL', 'https://sandbox.example.com'),
+        'api_key' => env('SANDBOX_API_KEY'),
+        'timeout' => env('SANDBOX_TIMEOUT', 30),
+    ],
+
 ];

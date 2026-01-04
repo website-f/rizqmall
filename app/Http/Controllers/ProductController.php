@@ -293,7 +293,8 @@ class ProductController extends Controller
             'category',
             'tags',
             'specifications',
-            'store'
+            'store',
+            'reviews.user'
         ])
             ->where('slug', $slug)
             ->where('status', 'published')
@@ -358,7 +359,7 @@ class ProductController extends Controller
             }
 
             $products = Product::where('store_id', $store->id)
-                ->with('category')
+                ->with(['category', 'images'])
                 ->latest()
                 ->paginate(10);
 
@@ -395,6 +396,9 @@ class ProductController extends Controller
                 break;
             case 'popular':
                 $query->orderBy('sold_count', 'desc');
+                break;
+            case 'rating':
+                $query->orderBy('rating_average', 'desc');
                 break;
             default:
                 $query->orderBy('created_at', 'desc');
@@ -447,6 +451,295 @@ class ProductController extends Controller
     {
         // For now, store same image - you can use Intervention Image for proper thumbnails
         return $file->store($path, 'public');
+    }
+
+    /**
+     * Show product edit form
+     */
+    public function edit($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to continue.');
+        }
+
+        $store = $user->stores()->first();
+        if (!$store) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please set up your store first.');
+        }
+
+        // Get product and ensure it belongs to this vendor's store
+        $product = Product::with(['images', 'variants.options', 'tags', 'specifications'])
+            ->where('id', $id)
+            ->where('store_id', $store->id)
+            ->firstOrFail();
+
+        $type = $product->type;
+
+        // Get categories for this store type
+        $categories = ProductCategory::where('store_category_id', $store->store_category_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $tags = Tag::all();
+
+        // Get variant types for product variations
+        $variantTypes = VariantType::orderBy('sort_order')->get();
+
+        return view('vendor.products.edit', compact('product', 'store', 'type', 'categories', 'tags', 'variantTypes'));
+    }
+
+    /**
+     * Update product
+     */
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to continue.');
+        }
+
+        $store = $user->stores()->first();
+        if (!$store) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please set up your store first.');
+        }
+
+        // Get product and ensure it belongs to this vendor's store
+        $product = Product::where('id', $id)
+            ->where('store_id', $store->id)
+            ->firstOrFail();
+
+        // Base validation (similar to store method)
+        $rules = [
+            'name' => 'required|string|max:255',
+            'short_description' => 'nullable|string|max:500',
+            'description' => 'required|string',
+            'product_category_id' => 'nullable|exists:product_categories,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+            'regular_price' => 'required|numeric|min:0.01',
+            'sale_price' => 'nullable|numeric|lt:regular_price|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'stock_quantity' => 'nullable|integer|min:0',
+            'low_stock_threshold' => 'nullable|integer|min:0',
+        ];
+
+        // Type-specific validation
+        if ($product->type === 'service') {
+            $rules['service_duration'] = 'nullable|integer|min:1';
+            $rules['service_availability'] = 'nullable|in:instant,scheduled,both';
+        } elseif ($product->type === 'pharmacy') {
+            $rules['requires_prescription'] = 'nullable|boolean';
+            $rules['has_expiry'] = 'nullable|boolean';
+            $rules['expiry_date'] = 'nullable|date|after:today';
+        }
+
+        $validated = $request->validate($rules);
+
+        try {
+            DB::beginTransaction();
+
+            // Update basic fields
+            $product->name = $validated['name'];
+            $product->slug = Str::slug($validated['name']) . '-' . $product->id;
+            $product->short_description = $validated['short_description'] ?? null;
+            $product->description = $validated['description'];
+            $product->product_category_id = $validated['product_category_id'] ?? null;
+            $product->regular_price = $validated['regular_price'];
+            $product->sale_price = $validated['sale_price'] ?? null;
+            $product->cost_price = $validated['cost_price'] ?? null;
+
+            if ($product->product_type === 'simple') {
+                $product->stock_quantity = $validated['stock_quantity'] ?? 0;
+            }
+
+            $product->low_stock_threshold = $validated['low_stock_threshold'] ?? 5;
+
+            // Update type-specific fields
+            if ($product->type === 'service') {
+                $product->service_duration = $validated['service_duration'] ?? null;
+                $product->service_availability = $validated['service_availability'] ?? 'instant';
+            } elseif ($product->type === 'pharmacy') {
+                $product->requires_prescription = $validated['requires_prescription'] ?? false;
+                $product->has_expiry = $validated['has_expiry'] ?? false;
+                $product->expiry_date = $validated['expiry_date'] ?? null;
+            }
+
+            $product->save();
+
+            // Update tags
+            if (isset($validated['tags'])) {
+                $product->tags()->sync($validated['tags']);
+            }
+
+            // Handle new images if uploaded
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $image) {
+                    $path = $this->storeImage($image, 'products');
+                    $thumbnailPath = $this->createThumbnail($image, 'products/thumbnails');
+
+                    $product->images()->create([
+                        'path' => $path,
+                        'thumbnail_path' => $thumbnailPath,
+                        'sort_order' => $product->images()->count() + $index,
+                        'is_primary' => $product->images()->count() === 0 && $index === 0,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('vendor.products.index')
+                ->with('success', 'Product "' . $product->name . '" updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Product update failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Failed to update product. Please try again.');
+        }
+    }
+
+    /**
+     * Delete product (soft delete)
+     */
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to continue.');
+        }
+
+        $store = $user->stores()->first();
+        if (!$store) {
+            return redirect()->route('store.select-category')
+                ->with('error', 'Please set up your store first.');
+        }
+
+        try {
+            // Get product and ensure it belongs to this vendor's store
+            $product = Product::where('id', $id)
+                ->where('store_id', $store->id)
+                ->firstOrFail();
+
+            $productName = $product->name;
+
+            // Soft delete (if using SoftDeletes trait) or change status
+            if (method_exists($product, 'delete')) {
+                $product->delete();
+            } else {
+                $product->status = 'archived';
+                $product->save();
+            }
+
+            Log::info('Product deleted by vendor', [
+                'product_id' => $id,
+                'product_name' => $productName,
+                'vendor_id' => $user->id,
+                'store_id' => $store->id,
+            ]);
+
+            return redirect()->route('vendor.products.index')
+                ->with('success', 'Product "' . $productName . '" has been deleted.');
+        } catch (\Exception $e) {
+            Log::error('Product deletion failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete product. Please try again.');
+        }
+    }
+
+    /**
+     * Toggle product status (publish/unpublish)
+     */
+    public function toggleStatus($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $store = $user->stores()->first();
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'No store found'], 403);
+        }
+
+        try {
+            $product = Product::where('id', $id)
+                ->where('store_id', $store->id)
+                ->firstOrFail();
+
+            $product->status = $product->status === 'published' ? 'draft' : 'published';
+            $product->save();
+
+            return response()->json([
+                'success' => true,
+                'status' => $product->status,
+                'message' => 'Product status updated to ' . $product->status,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to toggle status: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete product image
+     */
+    public function deleteImage(Product $product, $image)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $store = $user->stores()->first();
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'No store found'], 403);
+        }
+
+        // Verify product belongs to user's store
+        if ($product->store_id !== $store->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access'], 403);
+        }
+
+        try {
+            $productImage = $product->images()->where('id', $image)->first();
+
+            if (!$productImage) {
+                return response()->json(['success' => false, 'message' => 'Image not found'], 404);
+            }
+
+            // Delete the file from storage if it exists
+            $imagePath = str_replace('/storage/', 'public/', $productImage->image_path);
+            if (\Storage::exists($imagePath)) {
+                \Storage::delete($imagePath);
+            }
+
+            // Delete the database record
+            $productImage->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting product image', [
+                'error' => $e->getMessage(),
+                'product_id' => $product->id,
+                'image_id' => $image,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete image: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

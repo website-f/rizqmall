@@ -30,8 +30,8 @@
                             @forelse($products as $product)
                                 <tr>
                                     <td class="ps-4">
-                                        @if ($product->images && count($product->images) > 0)
-                                            <img src="{{ Storage::url($product->images[0]) }}" alt="{{ $product->name }}"
+                                        @if ($product->images && $product->images->count() > 0)
+                                            <img src="{{ $product->images->first()->url }}" alt="{{ $product->name }}"
                                                 class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
                                         @else
                                             <div class="bg-light rounded d-flex align-items-center justify-content-center"

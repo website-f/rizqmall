@@ -20,7 +20,7 @@
 
                         <!-- SSO Login (Recommended) -->
                         <div class="mb-4">
-                            <a href="{{ config('services.sandbox.url', 'http://localhost:8000') }}/dashboard"
+                            <a href="{{ config('services.sandbox.url') }}/login"
                                 class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center">
                                 <span class="fas fa-sign-in-alt me-2"></span>
                                 Login via Sandbox Account
@@ -114,7 +114,7 @@
 
                         <!-- Forgot Password -->
                         <div class="text-center mt-4">
-                            <a href="{{ config('services.sandbox.url', 'http://localhost:8000') }}/password/reset"
+                            <a href="{{ config('services.sandbox.url') }}/password/reset"
                                 class="text-decoration-none fs-9">
                                 Forgot your password?
                             </a>
@@ -132,7 +132,7 @@
                         </a>
                         <hr class="my-3">
                         <p class="mb-2 text-body-secondary fs-9">Want to sell on RizqMall?</p>
-                        <a href="{{ config('services.sandbox.url', 'http://localhost:8000') }}/register"
+                        <a href="{{ config('services.sandbox.url') }}/register"
                             class="btn btn-link text-decoration-none fs-9">
                             <span class="fas fa-store me-2"></span>
                             Register as Vendor

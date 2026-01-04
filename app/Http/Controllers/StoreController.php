@@ -36,17 +36,27 @@ class StoreController extends Controller
             abort(403, 'Only vendor accounts can create stores.');
         }
 
-        // Check if user already has a store
-        if ($user->hasStore()) {
-            return redirect()->route('vendor.dashboard')
-                ->with('info', 'You already have a store.');
+        // Check store quota
+        $currentStoreCount = $user->stores()->count();
+        $baseQuota = session('stores_quota', 1); // From SSO login
+
+        // Calculate additional quota from purchases
+        $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)
+            ->active()
+            ->sum('store_slots_purchased');
+
+        // Total quota
+        $storeQuota = $baseQuota + $additionalSlots;
+
+        // Only block if they actually have stores AND reached the limit
+        // This prevents redirect loops when quota is 0 or misconfigured
+        if ($currentStoreCount > 0 && $currentStoreCount >= $storeQuota) {
+            return redirect()->route('vendor.my-stores')
+                ->with('error', 'You have reached your store limit (' . $storeQuota . '). Purchase additional store slots to create more stores.');
         }
 
-        // Check subscription status
-        if (!$user->has_active_subscription) {
-            return redirect()->route('subscription.expired')
-                ->with('error', 'Please activate your subscription to create a store.');
-        }
+        // Note: Subscription check is handled by CheckSubscription middleware
+        // No need to check again here to avoid redirect loops
 
         // Get active store categories
         $categories = StoreCategory::where('is_active', true)
@@ -105,10 +115,21 @@ class StoreController extends Controller
                 ->with('error', 'Please start the setup process again.');
         }
 
-        // Check if user already has a store
-        if ($user->hasStore()) {
-            return redirect()->route('vendor.dashboard')
-                ->with('info', 'You already have a store.');
+        // Check store quota (1 store per RizqMall subscription + purchased slots)
+        $currentStoreCount = $user->stores()->count();
+        $baseQuota = session('stores_quota', 1); // Default 1 store per subscription
+
+        // Calculate additional quota from purchases
+        $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)
+            ->active()
+            ->sum('store_slots_purchased');
+
+        // Total quota
+        $storeQuota = $baseQuota + $additionalSlots;
+
+        if ($currentStoreCount >= $storeQuota) {
+            return redirect()->route('vendor.my-stores')
+                ->with('error', 'You have reached your store limit (' . $storeQuota . '). Purchase additional store slots to create more stores.');
         }
 
         // Validation

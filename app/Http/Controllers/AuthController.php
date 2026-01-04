@@ -64,18 +64,15 @@ class AuthController extends Controller
                 ]
             );
 
-            // Step 3: Check vendor subscription requirements
+            // Step 3: Log subscription status (but don't block login)
+            // Allow vendors to login even without active subscription
+            // They can be redirected to subscription page later if needed
             if ($user->user_type === 'vendor') {
-                if ($user->subscription_status !== 'active') {
-                    Log::warning('Vendor subscription not active', [
-                        'user_id' => $user->id,
-                        'subscription_user_id' => $userData['id'],
-                        'status' => $user->subscription_status,
-                    ]);
-
-                    return redirect()->route('subscription.expired')
-                        ->with('error', 'Your vendor subscription is not active. Please renew your subscription.');
-                }
+                Log::info('Vendor SSO login', [
+                    'user_id' => $user->id,
+                    'subscription_user_id' => $userData['id'],
+                    'subscription_status' => $user->subscription_status,
+                ]);
             }
 
             // Step 4: Create user session
@@ -244,11 +241,51 @@ class AuthController extends Controller
                 ->with('error', 'No account found with this email address.');
         }
 
-        // Check if user has a password set (for local auth)
-        if (!$user->password) {
+        // Allow SSO users to login directly in RizqMall
+        // If user has SSO account but no password, allow them to set one or verify via Sandbox
+        if (!$user->password && $user->auth_type === 'sso') {
+            // Ensure this SSO user has a Sandbox account
+            if (!$user->subscription_user_id) {
+                Log::info('SSO user has no Sandbox account, creating one', [
+                    'rizqmall_user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+
+                // Auto-create Sandbox account
+                $this->ensureSandboxAccountExists($user);
+
+                // Refresh user to get updated subscription_user_id
+                $user = $user->fresh();
+            }
+
+            // Now proceed with login - allow them to set password even without subscription
+            // They can subscribe later through Sandbox
+            try {
+                // Create a password for this SSO user to enable quick login
+                $tempPassword = Hash::make($request->password);
+                $user->password = $tempPassword;
+                $user->save();
+
+                Log::info('SSO user password created for quick login', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'has_sandbox_link' => !is_null($user->subscription_user_id),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to create password for SSO user', [
+                    'error' => $e->getMessage(),
+                    'user_id' => $user->id,
+                ]);
+
+                return back()
+                    ->withInput($request->only('email'))
+                    ->with('error', 'Unable to set up your account. Please try again or contact support.');
+            }
+        } elseif (!$user->password) {
+            // User has no password and no SSO setup
             return back()
                 ->withInput($request->only('email'))
-                ->with('error', 'This account uses SSO login. Please login through the Sandbox system.');
+                ->with('error', 'This account requires password setup. Please contact support.');
         }
 
         // Verify password
@@ -259,22 +296,7 @@ class AuthController extends Controller
         }
 
         try {
-            // For vendors with SSO auth, verify subscription status
-            if ($user->user_type === 'vendor' && $user->auth_type === 'sso' && $user->subscription_user_id) {
-                $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
-
-                if (!$subscriptionStatus) {
-                    return back()->with('error', 'Unable to verify your vendor account. Please login through the Sandbox system.');
-                }
-
-                // Require active subscription for vendors
-                if ($subscriptionStatus['status'] !== 'active') {
-                    return redirect()->route('subscription.expired')
-                        ->with('error', 'Your vendor subscription has expired. Please renew to continue.');
-                }
-            }
-
-            // Log the user in
+            // Log the user in first
             Auth::login($user, $request->has('remember'));
 
             $user->updateLastLogin($request->ip());
@@ -292,16 +314,45 @@ class AuthController extends Controller
                 ]
             );
 
-            session([
-                'subscription_user_id' => $user->subscription_user_id,
-                'session_id' => $sessionId,
-                'user_type' => $user->user_type,
-            ]);
-
             // Merge guest cart if exists
             if (session()->has('guest_cart_id')) {
                 $this->mergeGuestCart($user);
             }
+
+            // IMPORTANT: Auto-link/create Sandbox account for existing users BEFORE subscription check
+            if (!$user->subscription_user_id) {
+                $this->ensureSandboxAccountExists($user);
+                // Refresh user to get updated subscription_user_id
+                $user = $user->fresh();
+            }
+
+            // Now verify subscription status (after Sandbox account exists)
+            // For vendors, we just log the status but don't block login
+            // They can be prompted to subscribe later if needed
+            if ($user->user_type === 'vendor' && $user->subscription_user_id) {
+                try {
+                    $subscriptionStatus = $this->subscriptionService->verifySubscription($user->subscription_user_id);
+
+                    if ($subscriptionStatus) {
+                        Log::info('Vendor subscription verified', [
+                            'user_id' => $user->id,
+                            'subscription_status' => $subscriptionStatus['status'] ?? 'unknown',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Could not verify vendor subscription, allowing login anyway', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            session([
+                'subscription_user_id' => $user->subscription_user_id,
+                'session_id' => $sessionId,
+                'user_type' => $user->user_type,
+                'stores_quota' => $user->user_type === 'vendor' ? 1 : 0,
+            ]);
 
             Log::info('User logged in successfully', [
                 'user_id' => $user->id,
@@ -505,6 +556,41 @@ class AuthController extends Controller
                 'email' => $user->email,
             ]);
 
+            // Create corresponding user in Sandbox
+            try {
+                $sandboxService = app(\App\Services\SandboxApiService::class);
+                $sandboxUser = $sandboxService->createUserInSandbox([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'country' => $request->country,
+                    'state' => $request->state,
+                    'city' => $request->city,
+                    'rizqmall_user_id' => $user->id,
+                ]);
+
+                if ($sandboxUser) {
+                    // Update user with sandbox_user_id
+                    $user->subscription_user_id = $sandboxUser['id'];
+                    $user->save();
+
+                    Log::info('Sandbox account created for RizqMall user', [
+                        'rizqmall_user_id' => $user->id,
+                        'sandbox_user_id' => $sandboxUser['id'],
+                    ]);
+                } else {
+                    Log::warning('Failed to create Sandbox account for RizqMall user', [
+                        'rizqmall_user_id' => $user->id,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error creating Sandbox account', [
+                    'rizqmall_user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Don't fail registration if Sandbox creation fails
+            }
+
             // Create session
             $sessionId = Str::uuid();
             UserSession::create([
@@ -547,6 +633,74 @@ class AuthController extends Controller
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
                 ->with('error', 'Registration failed. Please try again.');
+        }
+    }
+
+    /**
+     * Ensure Sandbox account exists for existing RizqMall users
+     * This handles users who registered before the unified system
+     */
+    private function ensureSandboxAccountExists(User $user)
+    {
+        try {
+            Log::info('Checking if Sandbox account exists for user', [
+                'rizqmall_user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+            $sandboxService = app(\App\Services\SandboxApiService::class);
+
+            // Try to find existing Sandbox user by email
+            $sandboxUser = $sandboxService->findUserByEmail($user->email);
+
+            if ($sandboxUser) {
+                // Link existing Sandbox account and sync user type
+                // Get full user data from Sandbox to determine if vendor or customer
+                $sandboxUserData = $sandboxService->getUserData($sandboxUser['id']);
+
+                $user->subscription_user_id = $sandboxUser['id'];
+
+                // Sync user type from Sandbox
+                // If Sandbox user has active RizqMall subscription, they're a vendor
+                if ($sandboxUserData && isset($sandboxUserData['has_rizqmall_subscription'])) {
+                    $user->user_type = $sandboxUserData['has_rizqmall_subscription'] ? 'vendor' : 'customer';
+                }
+
+                $user->save();
+
+                Log::info('Linked existing Sandbox account and synced user type', [
+                    'rizqmall_user_id' => $user->id,
+                    'sandbox_user_id' => $sandboxUser['id'],
+                    'user_type' => $user->user_type,
+                ]);
+            } else {
+                // Create new Sandbox account
+                $sandboxUser = $sandboxService->createUserInSandbox([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'country' => $user->country,
+                    'state' => $user->state,
+                    'city' => $user->city,
+                    'rizqmall_user_id' => $user->id,
+                ]);
+
+                if ($sandboxUser) {
+                    $user->subscription_user_id = $sandboxUser['id'];
+                    $user->save();
+
+                    Log::info('Created new Sandbox account for existing user', [
+                        'rizqmall_user_id' => $user->id,
+                        'sandbox_user_id' => $sandboxUser['id'],
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to ensure Sandbox account exists', [
+                'rizqmall_user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail login if Sandbox sync fails
         }
     }
 }

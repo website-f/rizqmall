@@ -211,6 +211,143 @@ class SandboxApiService
     }
 
     /**
+     * Find user in Sandbox by email
+     */
+    public function findUserByEmail(string $email)
+    {
+        try {
+            Log::info('Looking up Sandbox user by email', [
+                'email' => $email,
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->get($this->baseUrl . '/api/rizqmall/user-by-email', [
+                    'email' => $email,
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if ($data['success'] ?? false) {
+                    Log::info('Found Sandbox user by email', [
+                        'email' => $email,
+                        'sandbox_user_id' => $data['user']['id'] ?? null,
+                    ]);
+
+                    return $data['user'];
+                }
+            }
+
+            Log::info('No Sandbox user found with email', [
+                'email' => $email,
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error finding Sandbox user by email', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Create user in Sandbox when they register in RizqMall
+     */
+    public function createUserInSandbox(array $userData)
+    {
+        try {
+            Log::info('Creating user in Sandbox via API', [
+                'email' => $userData['email'] ?? null,
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->post($this->baseUrl . '/api/rizqmall/create-user', $userData);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if ($data['success'] ?? false) {
+                    Log::info('User created successfully in Sandbox', [
+                        'sandbox_user_id' => $data['user']['id'] ?? null,
+                        'email' => $userData['email'] ?? null,
+                    ]);
+
+                    return $data['user'];
+                }
+            }
+
+            Log::error('Failed to create user in Sandbox', [
+                'status' => $response->status(),
+                'response' => $response->json(),
+                'email' => $userData['email'] ?? null,
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error creating user in Sandbox', [
+                'error' => $e->getMessage(),
+                'email' => $userData['email'] ?? null,
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Get full user data from Sandbox
+     */
+    public function getUserData(int $subscriptionUserId)
+    {
+        try {
+            Log::info('Fetching user data from Sandbox', [
+                'subscription_user_id' => $subscriptionUserId,
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->get($this->baseUrl . "/api/rizqmall/user/{$subscriptionUserId}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if ($data['success'] ?? false) {
+                    Log::info('Successfully fetched user data from Sandbox', [
+                        'subscription_user_id' => $subscriptionUserId,
+                        'has_rizqmall_subscription' => $data['user']['has_rizqmall_subscription'] ?? false,
+                    ]);
+
+                    return $data['user'];
+                }
+            }
+
+            Log::warning('Failed to fetch user data from Sandbox', [
+                'subscription_user_id' => $subscriptionUserId,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error fetching user data from Sandbox', [
+                'subscription_user_id' => $subscriptionUserId,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Get store quota for user
      */
     public function getStoreQuota(int $subscriptionUserId)

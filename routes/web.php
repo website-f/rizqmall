@@ -63,55 +63,63 @@ Route::prefix('cart')->name('cart.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Vendor Routes (Store Setup & Management) - Auth Only (No Session Validation)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verify.vendor'])->group(function () {
+
+    // Store Setup Flow (First Time)
+    Route::get('/select-store-category', [StoreController::class, 'showCategorySelection'])
+        ->name('store.select-category');
+    Route::get('/setup-store', [StoreController::class, 'showSetupForm'])
+        ->name('store.setup');
+    Route::post('/setup-store', [StoreController::class, 'store'])
+        ->name('store.store');
+
+    // Vendor Dashboard
+    Route::prefix('vendor')->name('vendor.')->group(function () {
+        Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('dashboard');
+
+        // Store Management
+        Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
+        Route::put('/store/update', [StoreController::class, 'update'])->name('store.update');
+        Route::post('/store/change-banner', [StoreController::class, 'changeBanner'])->name('store.changeBanner');
+        Route::post('/store/change-logo', [StoreController::class, 'changeLogo'])->name('store.changeLogo');
+
+        // Product Management
+        Route::resource('products', ProductController::class);
+        Route::post('/products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])
+            ->name('products.toggle-status');
+        Route::delete('/products/{product}/images/{image}', [ProductController::class, 'deleteImage'])
+            ->name('products.images.delete');
+
+        // Orders
+        Route::get('/orders', [VendorDashboardController::class, 'orders'])->name('orders.index');
+        Route::get('/orders/{order}', [VendorDashboardController::class, 'showOrder'])->name('orders.show');
+        Route::put('/orders/{order}/status', [VendorDashboardController::class, 'updateOrderStatus'])
+            ->name('orders.update-status');
+
+        // Analytics
+        Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('analytics');
+
+        // Settings
+        Route::get('/settings', [VendorDashboardController::class, 'settings'])->name('settings');
+        Route::put('/settings', [VendorDashboardController::class, 'updateSettings'])->name('settings.update');
+
+        // My Stores
+        Route::get('/my-stores', [VendorDashboardController::class, 'myStores'])->name('my-stores');
+
+        // Store Purchases
+        Route::post('/store-purchase', [\App\Http\Controllers\StorePurchaseController::class, 'purchase'])->name('store-purchase.create');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Authenticated Routes (All Users)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'validate.session'])->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Vendor Routes (Store Setup & Management)
-    |--------------------------------------------------------------------------
-    */
-    Route::middleware(['verify.vendor', 'check.subscription'])->group(function () {
-
-        // Store Setup Flow (First Time)
-        Route::get('/select-store-category', [StoreController::class, 'showCategorySelection'])
-            ->name('store.select-category');
-        Route::get('/setup-store', [StoreController::class, 'showSetupForm'])
-            ->name('store.setup');
-        Route::post('/setup-store', [StoreController::class, 'store'])
-            ->name('store.store');
-
-        // Vendor Dashboard
-        Route::prefix('vendor')->name('vendor.')->group(function () {
-            Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('dashboard');
-
-            // Store Management
-            Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
-            Route::put('/store/update', [StoreController::class, 'update'])->name('store.update');
-            Route::post('/store/change-banner', [StoreController::class, 'changeBanner'])->name('store.changeBanner');
-            Route::post('/store/change-logo', [StoreController::class, 'changeLogo'])->name('store.changeLogo');
-
-            // Product Management
-            Route::resource('products', ProductController::class);
-            Route::post('/products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])
-                ->name('products.toggle-status');
-
-            // Orders
-            Route::get('/orders', [VendorDashboardController::class, 'orders'])->name('orders.index');
-            Route::get('/orders/{order}', [VendorDashboardController::class, 'showOrder'])->name('orders.show');
-            Route::put('/orders/{order}/status', [VendorDashboardController::class, 'updateOrderStatus'])
-                ->name('orders.update-status');
-
-            // Analytics
-            Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('analytics');
-
-            // Settings
-            Route::get('/settings', [VendorDashboardController::class, 'settings'])->name('settings');
-            Route::put('/settings', [VendorDashboardController::class, 'updateSettings'])->name('settings.update');
-        });
-    });
 
     /*
     |--------------------------------------------------------------------------
@@ -150,6 +158,7 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
         // Reviews
         Route::get('/reviews', [CustomerDashboardController::class, 'reviews'])->name('reviews');
         Route::post('/reviews', [CustomerDashboardController::class, 'storeReview'])->name('reviews.store');
+        Route::post('/store-reviews', [CustomerDashboardController::class, 'storeStoreReview'])->name('reviews.store_store');
     });
 
     /*
@@ -171,6 +180,7 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
 */
 Route::post('/checkout/callback', [CheckoutController::class, 'callback'])->name('checkout.callback');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::post('/store-purchase/callback', [\App\Http\Controllers\StorePurchaseController::class, 'callback'])->name('store-purchase.callback');
 
 /*
 |--------------------------------------------------------------------------

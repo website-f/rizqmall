@@ -7,12 +7,12 @@
     /* Modern Filter Styles */
     .filter-sidebar {
         background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        border-radius: 2px;
+        padding: 20px;
+        box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
         position: sticky;
-        top: 100px;
-        max-height: calc(100vh - 120px);
+        top: 80px;
+        max-height: calc(100vh - 100px);
         overflow-y: auto;
     }
 
@@ -181,10 +181,10 @@
     /* Products Header */
     .products-header {
         background: white;
-        border-radius: 16px;
-        padding: 20px 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border-radius: 2px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -258,23 +258,23 @@
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
-    /* Modern Product Card */
+    /* Modern Product Card - Shopee Style */
     .product-card-modern {
         background: white;
-        border-radius: 16px;
+        border-radius: 4px;
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         height: 100%;
         display: flex;
         flex-direction: column;
-        border: 2px solid transparent;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.09);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
 
     .product-card-modern:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-        border-color: #e0e7ff;
+        transform: translateY(-2px);
+        box-shadow: 0 1px 20px 0 rgba(0, 0, 0, 0.08);
+        border-color: rgba(238, 77, 45, 0.4);
     }
 
     .product-image-wrapper {
@@ -297,23 +297,25 @@
 
     .product-badge {
         position: absolute;
-        top: 12px;
-        left: 12px;
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 700;
+        top: 0;
+        left: 0;
+        padding: 2px 4px;
+        border-radius: 0;
+        font-size: 10px;
+        font-weight: 600;
         z-index: 2;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .badge-sale {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
+        background: #ee4d2d;
+        color: #fff;
     }
 
     .badge-new {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
+        background: #26aa99;
+        color: #fff;
     }
 
     .product-wishlist {
@@ -345,32 +347,42 @@
     }
 
     .product-info {
-        padding: 16px;
+        padding: 8px;
         flex: 1;
         display: flex;
         flex-direction: column;
     }
 
     .product-store {
-        font-size: 12px;
-        color: #6b7280;
-        margin-bottom: 6px;
+        font-size: 11px;
+        color: #767676;
+        margin-bottom: 4px;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
+        text-transform: capitalize;
+    }
+
+    .product-store i {
+        font-size: 10px;
     }
 
     .product-name {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1f2937;
-        line-height: 1.4;
-        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 400;
+        color: rgba(0, 0, 0, 0.87);
+        line-height: 1.2;
+        margin-bottom: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 42px;
+        min-height: 33px;
+        text-overflow: ellipsis;
+    }
+
+    .product-name:hover {
+        color: #ee4d2d;
     }
 
     .product-rating {
@@ -428,29 +440,30 @@
     }
 
     .product-price {
-        font-size: 20px;
-        font-weight: 800;
-        color: #3b82f6;
+        font-size: 16px;
+        font-weight: 500;
+        color: #ee4d2d;
     }
 
     .product-old-price {
-        font-size: 14px;
-        color: #9ca3af;
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.54);
         text-decoration: line-through;
+        font-weight: 400;
     }
 
     .product-discount {
-        background: #fee2e2;
-        color: #dc2626;
-        padding: 2px 8px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 700;
+        background: rgba(255, 212, 36, 0.2);
+        color: #ee4d2d;
+        padding: 1px 4px;
+        border-radius: 2px;
+        font-size: 10px;
+        font-weight: 600;
     }
 
     .product-sold {
-        font-size: 12px;
-        color: #6b7280;
+        font-size: 10px;
+        color: rgba(0, 0, 0, 0.54);
     }
 
     /* Mobile Filter Button */
@@ -532,26 +545,52 @@
 
     @media (max-width: 575px) {
         .product-card-modern {
-            border-radius: 12px;
+            border-radius: 4px;
         }
 
         .product-info {
-            padding: 12px;
+            padding: 6px;
         }
 
         .product-name {
-            font-size: 14px;
-            min-height: 38px;
+            font-size: 12px;
+            min-height: 29px;
+            -webkit-line-clamp: 2;
         }
 
         .product-price {
-            font-size: 18px;
+            font-size: 14px;
+        }
+
+        .product-old-price {
+            font-size: 10px;
+        }
+
+        .product-sold {
+            font-size: 9px;
+        }
+
+        .product-store {
+            font-size: 10px;
+        }
+
+        .product-discount {
+            font-size: 9px;
+            padding: 1px 3px;
+        }
+
+        .products-header {
+            padding: 12px 16px;
+        }
+
+        .filter-sidebar {
+            width: 280px;
         }
     }
 </style>
 
-<section class="py-5">
-    <div class="container-small">
+<section class="py-3 py-md-4" style="background-color: #f5f5f5;">
+    <div class="container-fluid px-2 px-md-4">
         {{-- Breadcrumb --}}
         <nav class="mb-4" aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -710,9 +749,9 @@
                 </div>
 
                 {{-- Products Grid --}}
-                <div class="row g-3 g-lg-4">
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2 g-md-3">
                     @forelse($products as $product)
-                    <div class="col-6 col-md-4 col-xl-3">
+                    <div class="col">
                         <div class="product-card-modern">
                             <div class="product-image-wrapper">
                                 <a href="{{ route('product.show', $product->slug) }}">
@@ -749,76 +788,31 @@
                         </div>
 
                         <div class="product-info">
-                            <div class="product-store">
-                                <i class="fas fa-store"></i>
-                                {{ $product->store->name }}
-                            </div>
-
                             <a href="{{ route('product.show', $product->slug) }}"
                                 class="text-decoration-none">
                                 <h6 class="product-name">{{ $product->name }}</h6>
                             </a>
 
-                            <div class="product-rating">
-                                <div class="stars">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        @if ($i <=floor($product->rating_average))
-                                        <i class="fas fa-star"></i>
-                                        @elseif($i - 0.5 <= $product->rating_average)
-                                            <i class="fas fa-star-half-alt"></i>
-                                            @else
-                                            <i class="far fa-star"></i>
-                                            @endif
-                                            @endfor
-                                </div>
-                                <span class="count">({{ $product->rating_count }})</span>
-                            </div>
-
-                            {{-- Variants Info --}}
-                            @if ($product->product_type === 'variable' && $product->variants->count() > 0)
-                            <div class="product-variants-info">
-                                <i class="fas fa-layer-group"></i>
-                                {{ $product->variants->count() }} variants
-                            </div>
-                            @endif
-
-                            {{-- Stock Status --}}
-                            @php
-                            $stockQty =
-                            $product->product_type === 'simple'
-                            ? $product->stock_quantity
-                            : $product->variants->sum('stock_quantity');
-                            @endphp
-                            @if ($product->type !== 'service')
-                            <div class="product-stock {{ $stockQty > 0 ? 'stock-in' : 'stock-out' }}">
-                                <i
-                                    class="fas {{ $stockQty > 0 ? 'fa-check-circle' : 'fa-times-circle' }}"></i>
-                                {{ $stockQty > 0 ? 'In Stock' : 'Out of Stock' }}
-                            </div>
-                            @else
-                            <div class="product-stock stock-in">
-                                <i class="fas fa-calendar-check"></i>
-                                Available
-                            </div>
-                            @endif
-
-                            <div class="product-pricing">
+                            <div class="product-pricing mt-auto">
                                 <div class="product-price-row">
+                                    @if ($product->sale_price)
+                                    <span class="product-discount me-1">
+                                        {{ round((($product->regular_price - $product->sale_price) / $product->regular_price) * 100) }}% OFF
+                                    </span>
+                                    @endif
                                     <span class="product-price">
                                         RM{{ number_format($product->sale_price ?? $product->regular_price, 2) }}
                                     </span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
                                     @if ($product->sale_price)
                                     <span class="product-old-price">
                                         RM{{ number_format($product->regular_price, 2) }}
                                     </span>
-                                    <span class="product-discount">
-                                        -{{ round((($product->regular_price - $product->sale_price) / $product->regular_price) * 100) }}%
-                                    </span>
                                     @endif
-                                </div>
-                                <div class="product-sold">
-                                    <i class="fas fa-shopping-bag me-1"></i>
-                                    {{ number_format($product->sold_count) }} sold
+                                    <div class="product-sold ms-auto">
+                                        {{ number_format($product->sold_count) }} sold
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -870,8 +864,7 @@
     function toggleWishlist(productId, button) {
         // Check if user is logged in
         @guest
-        window.location.href = '{{ route('
-        login ') }}';
+        window.location.href = '{{ route("login") }}';
         return;
         @endguest
 

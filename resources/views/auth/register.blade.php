@@ -187,7 +187,7 @@
                         <!-- Vendor Registration Link -->
                         <div class="text-center">
                             <p class="text-body-secondary fs-9 mb-2">Want to sell on RizqMall?</p>
-                            <a href="{{ config('services.sandbox.url', 'http://localhost:8000') }}/register"
+                            <a href="{{ config('services.sandbox.url') }}/register"
                                 class="btn btn-outline-primary w-100">
                                 <span class="fas fa-store me-2"></span>
                                 Register as Vendor

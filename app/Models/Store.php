@@ -78,4 +78,24 @@ class Store extends Model
     {
         return $this->banner ? asset('storage/' . $this->banner) : asset('images/banner-placeholder.png');
     }
+
+    public function storeReviews()
+    {
+        return $this->hasMany(StoreReview::class);
+    }
+
+    public function getRatingAverageAttribute()
+    {
+        return (float) ($this->storeReviews()->avg('rating') ?? 0);
+    }
+
+    public function getRatingCountAttribute()
+    {
+        return $this->storeReviews()->count();
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'store_followers', 'store_id', 'user_id');
+    }
 }

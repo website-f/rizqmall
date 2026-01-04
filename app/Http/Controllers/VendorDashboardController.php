@@ -347,4 +347,34 @@ class VendorDashboardController extends Controller
         return redirect()->back()
             ->with('success', 'Settings updated successfully!');
     }
+
+    /**
+     * Show my stores page with quota management
+     */
+    public function myStores()
+    {
+        $user = Auth::user();
+        $stores = $user->stores()->with('category')->get();
+
+        // Base quota from subscription (stored in session)
+        $baseQuota = session('stores_quota', 1);
+
+        // Calculate additional quota from purchases
+        $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)
+            ->active()
+            ->sum('store_slots_purchased');
+
+        // Total quota
+        $storesQuota = $baseQuota + $additionalSlots;
+
+        $currentStoreCount = $stores->count();
+        $canAddStore = $currentStoreCount < $storesQuota;
+
+        // Get active purchases for display
+        $activePurchases = \App\Models\StorePurchase::where('user_id', $user->id)
+            ->active()
+            ->get();
+
+        return view('vendor.my-stores', compact('stores', 'storesQuota', 'currentStoreCount', 'canAddStore', 'baseQuota', 'additionalSlots', 'activePurchases'));
+    }
 }

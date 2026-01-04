@@ -659,6 +659,12 @@
                 </button>
             </li>
             @endif
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reviews"
+                    style="border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 700; padding: 16px 24px;">
+                    Reviews ({{ $product->rating_count }})
+                </button>
+            </li>
         </ul>
 
         <div class="tab-content p-4">
@@ -724,6 +730,92 @@
                 </table>
             </div>
             @endif
+
+            <!-- Reviews Tab -->
+            <div class="tab-pane fade" id="reviews">
+                <div class="row">
+                    <div class="col-lg-8">
+                        @forelse($product->reviews as $review)
+                        <div class="mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="fw-bold me-2">{{ $review->user->name ?? 'Anonymous' }}</div>
+                                    @if($review->verified_purchase)
+                                    <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7em;">Verified Purchase</span>
+                                    @endif
+                                </div>
+                                <small class="text-muted">{{ $review->created_at->diffForHumans() }}</small>
+                            </div>
+                            <div class="mb-2 text-warning">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="{{ $i <= $review->rating ? 'fas' : 'far' }} fa-star"></i>
+                                    @endfor
+                            </div>
+                            <h6 class="mb-2">{{ $review->title }}</h6>
+                            <p class="text-secondary mb-2">{{ $review->comment }}</p>
+                            @if($review->images)
+                            <div class="d-flex gap-2 mt-2">
+                                @foreach($review->images as $image)
+                                <img src="{{ asset('storage/' . $image) }}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                        @empty
+                        <div class="text-center py-5">
+                            <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                        </div>
+                        @endforelse
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h5 class="mb-4">Write a Review</h5>
+                                @auth
+                                <form action="{{ route('customer.reviews.store') }}" method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Rating</label>
+                                        <select name="rating" class="form-select" required>
+                                            <option value="5">5 Stars (Excellent)</option>
+                                            <option value="4">4 Stars (Good)</option>
+                                            <option value="3">3 Stars (Average)</option>
+                                            <option value="2">2 Stars (Poor)</option>
+                                            <option value="1">1 Star (Terrible)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Title</label>
+                                        <input type="text" name="title" class="form-control" placeholder="Review Title">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Review</label>
+                                        <textarea name="comment" class="form-control" rows="4" required minlength="10" placeholder="Tell us what you liked or disliked..."></textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Images (Optional)</label>
+                                        <input type="file" name="images[]" class="form-control" multiple accept="image/*">
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary w-100">Submit Review</button>
+                                </form>
+                                @else
+                                <div class="text-center">
+                                    <p class="mb-3">Please login to leave a review</p>
+                                    <a href="{{ route('login') }}" class="btn btn-outline-primary w-100">Login</a>
+                                </div>
+                                @endauth
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

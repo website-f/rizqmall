@@ -101,12 +101,12 @@
                                 </a>
                             </div>
                             <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.store.edit') }}" role="button" data-bs-toggle=""
+                                    href="{{ route('vendor.my-stores') }}" role="button" data-bs-toggle=""
                                     aria-expanded="false">
                                     <div class="d-flex align-items-center"><span class="nav-link-icon"><span
                                                 data-feather="home"></span></span><span
                                             class="nav-link-text-wrapper"><span class="nav-link-text">My
-                                                Store</span></span>
+                                                Stores</span></span>
                                     </div>
                                 </a>
                             </div>
@@ -441,10 +441,10 @@
                                                     <span>Dashboard</span></a>
                                             </li>
                                             <li class="nav-item"><a class="nav-link px-3 d-block"
-                                                    href="{{ route('vendor.store.edit') }}">
+                                                    href="{{ route('vendor.my-stores') }}">
                                                     <span class="me-2 text-body align-bottom"
                                                         data-feather="home"></span>
-                                                    My Store</a>
+                                                    My Stores</a>
                                             </li>
                                             <li class="nav-item"><a class="nav-link px-3 d-block"
                                                     href="{{ route('vendor.products.index') }}">
