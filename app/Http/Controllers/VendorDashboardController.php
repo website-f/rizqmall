@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\VendorMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,11 @@ class VendorDashboardController extends Controller
                 ->where('payment_status', 'paid')
                 ->whereMonth('created_at', now()->month)
                 ->sum('total'),
+            'total_members' => $store->members()->active()->count(),
+            'new_members_this_month' => $store->members()
+                ->active()
+                ->whereMonth('joined_at', now()->month)
+                ->count(),
         ];
 
         // Recent orders
@@ -51,6 +57,14 @@ class VendorDashboardController extends Controller
             ->where('status', 'published')
             ->orderBy('sold_count', 'desc')
             ->limit(5)
+            ->get();
+
+        // Recent members
+        $recentMembers = $store->members()
+            ->with('customer')
+            ->active()
+            ->latest('joined_at')
+            ->limit(10)
             ->get();
 
         // Revenue chart data (last 30 days)
@@ -70,6 +84,7 @@ class VendorDashboardController extends Controller
             'stats',
             'recentOrders',
             'topProducts',
+            'recentMembers',
             'revenueChart'
         ));
     }

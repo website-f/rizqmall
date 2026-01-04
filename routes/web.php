@@ -128,6 +128,9 @@ Route::middleware(['auth', 'verify.vendor'])->group(function () {
         // My Stores
         Route::get('/my-stores', [VendorDashboardController::class, 'myStores'])->name('my-stores');
 
+        // Store Members
+        Route::get('/members', [VendorMemberController::class, 'index'])->name('members.index');
+
         // Store Purchases
         Route::post('/store-purchase', [\App\Http\Controllers\StorePurchaseController::class, 'purchase'])->name('store-purchase.create');
     });

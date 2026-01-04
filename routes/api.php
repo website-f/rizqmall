@@ -16,4 +16,7 @@ Route::middleware(['api'])->prefix('sandbox')->group(function () {
 
     // Link user to Sandbox
     Route::post('/link-user', [\App\Http\Controllers\Api\UserApiController::class, 'linkToSandbox']);
+
+    // Get store members for a vendor (by sandbox_id)
+    Route::get('/store-members/{sandboxId}', [\App\Http\Controllers\Api\VendorMemberApiController::class, 'getStoreMembersBySandboxId']);
 });

@@ -20,6 +20,73 @@ class VendorMemberController extends Controller
     }
 
     /**
+     * Display the store members page
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $store = $user->stores()->first();
+
+        if (!$store) {
+            return redirect()->route('vendor.dashboard')
+                ->with('error', 'No store found.');
+        }
+
+        $query = VendorMember::with('customer')
+            ->where('store_id', $store->id);
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('customer', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        } else {
+            $query->active(); // Default to active members
+        }
+
+        // Join method filter
+        if ($request->filled('join_method')) {
+            $query->where('join_method', $request->join_method);
+        }
+
+        // Date range filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('joined_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('joined_at', '<=', $request->to_date);
+        }
+
+        $members = $query->orderBy('joined_at', 'desc')->paginate(20);
+
+        // Stats
+        $stats = [
+            'total_members' => $store->members()->active()->count(),
+            'new_this_month' => $store->members()
+                ->active()
+                ->whereMonth('joined_at', now()->month)
+                ->count(),
+            'qr_scans' => $store->members()
+                ->active()
+                ->where('join_method', 'qr_scan')
+                ->count(),
+            'referrals' => $store->members()
+                ->active()
+                ->where('join_method', 'referral')
+                ->count(),
+        ];
+
+        return view('vendor.members.index', compact('store', 'members', 'stats'));
+    }
+
+    /**
      * Join a store as a member directly from store page
      */
     public function joinStore(Request $request, Store $store)
