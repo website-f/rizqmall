@@ -1,17 +1,14 @@
 @extends('partials.app')
 
-@section('title', 'RizqMall - Your Digital Marketplace')
+@section('title', 'Stores - RizqMall')
 
 @section('content')
 <style>
-    /* Modern color palette */
     :root {
         --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --orange-gradient: linear-gradient(135deg, #ee4d2d 0%, #ff6b35 100%);
         --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
 
-    /* Hero Section - Beautiful Banner */
     .stores-hero {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
         padding: 60px 0 80px;
@@ -28,10 +25,8 @@
         right: 0;
         bottom: 0;
         background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
-        opacity: 1;
     }
 
-    /* Animated gradient overlay */
     .stores-hero::after {
         content: '';
         position: absolute;
@@ -71,12 +66,9 @@
         font-weight: 600;
         color: #a5b4fc;
         margin-bottom: 20px;
-        letter-spacing: 0.5px;
     }
 
-    .hero-badge i {
-        color: #fbbf24;
-    }
+    .hero-badge i { color: #fbbf24; }
 
     .stores-hero h1 {
         font-size: 48px;
@@ -97,7 +89,6 @@
         color: #cbd5e1;
     }
 
-    /* Hero Search Box */
     .hero-search-box {
         max-width: 600px;
         margin: 0 auto;
@@ -117,9 +108,7 @@
         transition: all 0.3s;
     }
 
-    .hero-search-input::placeholder {
-        color: rgba(255, 255, 255, 0.6);
-    }
+    .hero-search-input::placeholder { color: rgba(255, 255, 255, 0.6); }
 
     .hero-search-input:focus {
         outline: none;
@@ -161,7 +150,6 @@
         box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
     }
 
-    /* Category Directory Section */
     .category-directory {
         background: white;
         border-radius: 24px;
@@ -190,10 +178,7 @@
         margin: 0;
     }
 
-    .directory-title i {
-        color: #667eea;
-        font-size: 26px;
-    }
+    .directory-title i { color: #667eea; font-size: 26px; }
 
     .scroll-hint {
         font-size: 13px;
@@ -203,11 +188,8 @@
         gap: 6px;
     }
 
-    .category-grid-wrapper {
-        position: relative;
-    }
+    .category-grid-wrapper { position: relative; }
 
-    /* Category Grid - Horizontal Scroll */
     .category-grid {
         display: flex;
         gap: 20px;
@@ -222,26 +204,11 @@
         cursor: grab;
     }
 
-    .category-grid:active {
-        cursor: grabbing;
-    }
+    .category-grid:active { cursor: grabbing; }
+    .category-grid::-webkit-scrollbar { height: 8px; }
+    .category-grid::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+    .category-grid::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; }
 
-    .category-grid::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .category-grid::-webkit-scrollbar-track {
-        background: #e5e7eb;
-        border-radius: 10px;
-        margin: 0 4px;
-    }
-
-    .category-grid::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 10px;
-    }
-
-    /* Category Card with Image */
     .category-card {
         flex: 0 0 auto;
         width: 160px;
@@ -270,29 +237,12 @@
         box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
     }
 
-    .category-card.active .category-info {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
+    .category-card.active .category-info { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .category-card.active .category-name { color: white; }
+    .category-card.active .category-count { color: rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.2); }
 
-    .category-card.active .category-name {
-        color: white;
-    }
-
-    .category-card.active .category-count {
-        color: rgba(255, 255, 255, 0.9);
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .category-image {
-        width: 100%;
-        height: 100px;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .category-card:hover .category-image {
-        transform: scale(1.08);
-    }
+    .category-image { width: 100%; height: 100px; object-fit: cover; transition: transform 0.3s ease; }
+    .category-card:hover .category-image { transform: scale(1.08); }
 
     .category-image-wrapper {
         overflow: hidden;
@@ -300,19 +250,9 @@
         background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     }
 
-    .category-info {
-        padding: 14px 12px;
-        background: #f9fafb;
-        transition: all 0.3s ease;
-    }
+    .category-info { padding: 14px 12px; background: #f9fafb; transition: all 0.3s ease; }
 
-    .category-name {
-        font-size: 13px;
-        font-weight: 700;
-        color: #374151;
-        margin-bottom: 6px;
-        line-height: 1.3;
-    }
+    .category-name { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; line-height: 1.3; }
 
     .category-count {
         font-size: 11px;
@@ -324,7 +264,6 @@
         display: inline-block;
     }
 
-    /* Scroll fade indicator */
     .category-grid-wrapper::after {
         content: '';
         position: absolute;
@@ -337,108 +276,34 @@
         z-index: 1;
     }
 
-    /* Responsive Adjustments */
     @media (min-width: 1200px) {
-        .category-card {
-            width: 170px;
-        }
-
-        .category-image-wrapper {
-            height: 110px;
-        }
-
-        .category-image {
-            height: 110px;
-        }
-
-        .category-name {
-            font-size: 14px;
-        }
+        .category-card { width: 170px; }
+        .category-image-wrapper, .category-image { height: 110px; }
+        .category-name { font-size: 14px; }
     }
 
     @media (max-width: 767px) {
-        .stores-hero {
-            padding: 40px 0 60px;
-        }
-
-        .stores-hero h1 {
-            font-size: 28px;
-        }
-
-        .stores-hero p {
-            font-size: 15px;
-            margin-bottom: 24px;
-        }
-
-        .hero-search-input {
-            padding: 14px 120px 14px 45px;
-            font-size: 14px;
-        }
-
-        .hero-search-btn {
-            padding: 0 20px;
-            font-size: 13px;
-        }
-
-        .hero-search-btn span {
-            display: none;
-        }
-
-        .category-directory {
-            padding: 20px 16px;
-            border-radius: 16px;
-        }
-
-        .category-grid {
-            gap: 14px;
-        }
-
-        .category-card {
-            width: 130px;
-            border-radius: 14px;
-        }
-
-        .category-image-wrapper {
-            height: 80px;
-        }
-
-        .category-image {
-            height: 80px;
-        }
-
-        .category-info {
-            padding: 10px 8px;
-        }
-
-        .category-name {
-            font-size: 11px;
-        }
-
-        .category-count {
-            font-size: 10px;
-            padding: 3px 8px;
-        }
-
-        .directory-title {
-            font-size: 18px;
-        }
+        .stores-hero { padding: 40px 0 60px; }
+        .stores-hero h1 { font-size: 28px; }
+        .stores-hero p { font-size: 15px; margin-bottom: 24px; }
+        .hero-search-input { padding: 14px 120px 14px 45px; font-size: 14px; }
+        .hero-search-btn { padding: 0 20px; font-size: 13px; }
+        .hero-search-btn span { display: none; }
+        .category-directory { padding: 20px 16px; border-radius: 16px; }
+        .category-grid { gap: 14px; }
+        .category-card { width: 130px; border-radius: 14px; }
+        .category-image-wrapper, .category-image { height: 80px; }
+        .category-info { padding: 10px 8px; }
+        .category-name { font-size: 11px; }
+        .category-count { font-size: 10px; padding: 3px 8px; }
+        .directory-title { font-size: 18px; }
     }
 
     @media (max-width: 400px) {
-        .category-card {
-            width: 115px;
-        }
-
-        .category-image-wrapper {
-            height: 70px;
-        }
-
-        .category-image {
-            height: 70px;
-        }
+        .category-card { width: 115px; }
+        .category-image-wrapper, .category-image { height: 70px; }
     }
 
-    /* Stores Grid Header */
     .stores-header {
         display: flex;
         justify-content: space-between;
@@ -465,13 +330,7 @@
         font-size: 14px;
     }
 
-    .view-toggle {
-        display: flex;
-        gap: 6px;
-        background: #f3f4f6;
-        padding: 4px;
-        border-radius: 10px;
-    }
+    .view-toggle { display: flex; gap: 6px; background: #f3f4f6; padding: 4px; border-radius: 10px; }
 
     .view-btn {
         width: 38px;
@@ -487,24 +346,10 @@
         color: #6b7280;
     }
 
-    .view-btn:hover {
-        color: #667eea;
-    }
+    .view-btn:hover { color: #667eea; }
+    .view-btn.active { background: white; color: #667eea; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
 
-    .view-btn.active {
-        background: white;
-        color: #667eea;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Active Filters Display */
-    .active-filters-bar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-        margin-bottom: 20px;
-    }
+    .active-filters-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
 
     .filter-tag {
         display: inline-flex;
@@ -529,9 +374,7 @@
         cursor: pointer;
     }
 
-    .filter-tag .remove-filter:hover {
-        color: #1e3a8a;
-    }
+    .filter-tag .remove-filter:hover { color: #1e3a8a; }
 
     .clear-all-filters {
         font-size: 13px;
@@ -543,12 +386,8 @@
         transition: all 0.2s;
     }
 
-    .clear-all-filters:hover {
-        background: #fee2e2;
-        color: #dc2626;
-    }
+    .clear-all-filters:hover { background: #fee2e2; color: #dc2626; }
 
-    /* Store Cards - Modern */
     .store-card {
         background: white;
         border-radius: 16px;
@@ -618,12 +457,7 @@
         box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
 
-    .store-body {
-        padding: 18px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
+    .store-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
 
     .store-category-tag {
         font-size: 11px;
@@ -646,45 +480,15 @@
         overflow: hidden;
     }
 
-    .store-location {
-        font-size: 12px;
-        color: #9ca3af;
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
+    .store-location { font-size: 12px; color: #9ca3af; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; }
 
-    .store-stats {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 16px;
-        padding-top: 14px;
-        border-top: 1px solid #f3f4f6;
-    }
+    .store-stats { display: flex; gap: 16px; margin-bottom: 16px; padding-top: 14px; border-top: 1px solid #f3f4f6; }
 
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
+    .stat-item { display: flex; flex-direction: column; gap: 2px; }
+    .stat-value { font-size: 16px; font-weight: 800; color: #667eea; }
+    .stat-label { font-size: 10px; color: #9ca3af; font-weight: 600; text-transform: uppercase; }
 
-    .stat-value {
-        font-size: 16px;
-        font-weight: 800;
-        color: #667eea;
-    }
-
-    .stat-label {
-        font-size: 10px;
-        color: #9ca3af;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .store-actions {
-        margin-top: auto;
-    }
+    .store-actions { margin-top: auto; }
 
     .visit-store-btn {
         width: 100%;
@@ -711,30 +515,11 @@
         color: white;
     }
 
-    /* List View */
-    .store-card.list-view {
-        flex-direction: row;
-    }
+    .store-card.list-view { flex-direction: row; }
+    .store-card.list-view .store-banner { min-width: 180px; min-height: auto; }
+    .store-card.list-view .store-body { flex-direction: row; align-items: center; gap: 20px; }
+    .store-card.list-view .store-stats { border-top: none; border-left: 1px solid #f3f4f6; padding-left: 20px; margin-bottom: 0; }
 
-    .store-card.list-view .store-banner {
-        min-width: 180px;
-        min-height: auto;
-    }
-
-    .store-card.list-view .store-body {
-        flex-direction: row;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .store-card.list-view .store-stats {
-        border-top: none;
-        border-left: 1px solid #f3f4f6;
-        padding-left: 20px;
-        margin-bottom: 0;
-    }
-
-    /* Empty State */
     .empty-state {
         text-align: center;
         padding: 80px 20px;
@@ -743,161 +528,35 @@
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
 
-    .empty-icon {
-        font-size: 72px;
-        color: #d1d5db;
-        margin-bottom: 24px;
-    }
+    .empty-icon { font-size: 72px; color: #d1d5db; margin-bottom: 24px; }
+    .empty-state h4 { font-size: 22px; font-weight: 700; color: #6b7280; margin-bottom: 10px; }
+    .empty-state p { color: #9ca3af; font-size: 15px; margin-bottom: 24px; }
 
-    .empty-state h4 {
-        font-size: 22px;
-        font-weight: 700;
-        color: #6b7280;
-        margin-bottom: 10px;
-    }
-
-    .empty-state p {
-        color: #9ca3af;
-        font-size: 15px;
-        margin-bottom: 24px;
-    }
-
-    /* Responsive - Non-Category Styles */
     @media (max-width: 991px) {
-        .store-card.list-view {
-            flex-direction: column;
-        }
-
-        .store-card.list-view .store-body {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .store-card.list-view .store-stats {
-            border-left: none;
-            border-top: 1px solid #f3f4f6;
-            padding-left: 0;
-            padding-top: 12px;
-        }
+        .store-card.list-view { flex-direction: column; }
+        .store-card.list-view .store-body { flex-direction: column; align-items: stretch; }
+        .store-card.list-view .store-stats { border-left: none; border-top: 1px solid #f3f4f6; padding-left: 0; padding-top: 12px; }
     }
 
     @media (max-width: 575px) {
-        .stores-header {
-            justify-content: center;
-        }
-
-        .stores-count {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    /* Map Section */
-    .map-section {
-        background: white;
-        border-radius: 20px;
-        padding: 24px;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    }
-
-    .map-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .map-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #1f2937;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0;
-    }
-
-    .map-title i {
-        color: #667eea;
-    }
-
-    .map-controls {
-        display: flex;
-        gap: 10px;
-    }
-
-    .map-btn {
-        padding: 10px 20px;
-        border: 2px solid #e5e7eb;
-        background: white;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s;
-        color: #6b7280;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .map-btn:hover {
-        border-color: #667eea;
-        color: #667eea;
-    }
-
-    .map-btn.active {
-        background: var(--primary-gradient);
-        border-color: #667eea;
-        color: white;
-    }
-
-    #storeMap {
-        height: 400px;
-        border-radius: 16px;
-        overflow: hidden;
-        border: 2px solid #e5e7eb;
-    }
-
-    @media (max-width: 575px) {
-        #storeMap {
-            height: 300px;
-        }
-
-        .map-header {
-            flex-direction: column;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .map-controls {
-            width: 100%;
-        }
-
-        .map-btn {
-            flex: 1;
-            justify-content: center;
-        }
+        .stores-header { justify-content: center; }
+        .stores-count { width: 100%; justify-content: center; }
     }
 </style>
 
 <section style="background-color: #f5f5f5; min-height: 100vh;">
-    {{-- Hero Section with Search --}}
     <div class="stores-hero">
         <div class="stores-hero-content">
             <div class="hero-badge">
-                <i class="fas fa-star"></i>
-                Trusted by thousands of sellers
+                <i class="fas fa-store"></i>
+                Browse All Stores
             </div>
-            <h1>Discover Amazing Stores</h1>
-            <p>Explore verified sellers and local businesses. Find products, services, and everything you need in one place.</p>
+            <h1>All Stores</h1>
+            <p>Find products, services, and everything you need from our verified sellers.</p>
 
-            <form action="{{ route('rizqmall.home') }}" method="GET" class="hero-search-box">
+            <form action="{{ route('stores') }}" method="GET" class="hero-search-box">
                 <i class="fas fa-search hero-search-icon"></i>
-                <input type="text"
-                    name="search"
-                    class="hero-search-input"
+                <input type="text" name="search" class="hero-search-input"
                     placeholder="Search stores, products, or services..."
                     value="{{ request('search') }}">
                 @if(request('category'))
@@ -912,7 +571,6 @@
     </div>
 
     <div class="container-fluid px-3 px-md-4">
-        {{-- Category Directory --}}
         <div class="category-directory">
             <div class="directory-header">
                 <h2 class="directory-title">
@@ -927,9 +585,7 @@
 
             <div class="category-grid-wrapper">
                 <div class="category-grid" id="categoryGrid">
-                    {{-- All Stores Option --}}
-                    <a href="{{ route('rizqmall.home') }}"
-                        class="category-card {{ !request('category') ? 'active' : '' }}">
+                    <a href="{{ route('stores') }}" class="category-card {{ !request('category') ? 'active' : '' }}">
                         <div class="category-image-wrapper">
                             <img src="{{ asset('directory/rmarketplace.jpeg') }}" alt="All Stores" class="category-image">
                         </div>
@@ -941,7 +597,6 @@
 
                     @foreach($categories as $category)
                     @php
-                        // Map category names to image files
                         $imageMap = [
                             'Marketplace' => 'rmarketplace.jpeg',
                             'Services' => 'rservices.jpeg',
@@ -956,7 +611,7 @@
                         ];
                         $imageName = $imageMap[$category->name] ?? 'rmarketplace.jpeg';
                     @endphp
-                    <a href="{{ route('rizqmall.home', ['category' => $category->id]) }}"
+                    <a href="{{ route('stores', ['category' => $category->id]) }}"
                         class="category-card {{ request('category') == $category->id ? 'active' : '' }}">
                         <div class="category-image-wrapper">
                             <img src="{{ asset('directory/' . $imageName) }}" alt="{{ $category->name }}" class="category-image">
@@ -971,26 +626,6 @@
             </div>
         </div>
 
-        {{-- Map Section --}}
-        <div class="map-section" id="mapSection">
-            <div class="map-header">
-                <h3 class="map-title">
-                    <i class="fas fa-map-marked-alt"></i>
-                    Store Locations
-                </h3>
-                <div class="map-controls">
-                    <button class="map-btn" id="nearbyBtn">
-                        <i class="fas fa-location-arrow"></i> Nearby Me
-                    </button>
-                    <button class="map-btn active" id="toggleMapBtn" onclick="toggleMap()">
-                        <i class="fas fa-eye"></i> <span id="mapToggleText">Hide Map</span>
-                    </button>
-                </div>
-            </div>
-            <div id="storeMap"></div>
-        </div>
-
-        {{-- Active Filters --}}
         @if(request()->hasAny(['search', 'category']))
         <div class="active-filters-bar">
             @if(request('search'))
@@ -1002,9 +637,7 @@
             @endif
 
             @if(request('category'))
-            @php
-            $selectedCategory = $categories->find(request('category'));
-            @endphp
+            @php $selectedCategory = $categories->find(request('category')); @endphp
             <span class="filter-tag">
                 <i class="fas fa-folder"></i>
                 {{ $selectedCategory->name ?? 'Category' }}
@@ -1012,13 +645,12 @@
             </span>
             @endif
 
-            <a href="{{ route('rizqmall.home') }}" class="clear-all-filters">
+            <a href="{{ route('stores') }}" class="clear-all-filters">
                 <i class="fas fa-times-circle me-1"></i> Clear All
             </a>
         </div>
         @endif
 
-        {{-- Stores Grid Header --}}
         <div class="stores-header">
             <div class="stores-count">
                 <i class="fas fa-store"></i>
@@ -1035,20 +667,15 @@
             </div>
         </div>
 
-        {{-- Stores Grid --}}
         <div class="row g-3 g-md-4" id="storesGrid">
             @forelse($stores as $store)
             <div class="col-6 col-sm-6 col-md-4 col-lg-3 col-xl-2-4 store-item">
                 <div class="store-card">
                     <div class="store-banner">
                         @if($store->image)
-                        <img src="{{ asset('storage/' . $store->image) }}"
-                            alt="{{ $store->name }}"
-                            class="store-logo">
+                        <img src="{{ asset('storage/' . $store->image) }}" alt="{{ $store->name }}" class="store-logo">
                         @else
-                        <div class="store-logo-placeholder">
-                            {{ substr($store->name, 0, 1) }}
-                        </div>
+                        <div class="store-logo-placeholder">{{ substr($store->name, 0, 1) }}</div>
                         @endif
 
                         @if($store->is_verified)
@@ -1059,9 +686,7 @@
                     </div>
 
                     <div class="store-body">
-                        <div class="store-category-tag">
-                            {{ $store->category->name ?? 'Store' }}
-                        </div>
+                        <div class="store-category-tag">{{ $store->category->name ?? 'Store' }}</div>
                         <h5 class="store-name">{{ $store->name }}</h5>
                         <div class="store-location">
                             <i class="fas fa-map-marker-alt"></i>
@@ -1091,13 +716,11 @@
             @empty
             <div class="col-12">
                 <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-store-slash"></i>
-                    </div>
+                    <div class="empty-icon"><i class="fas fa-store-slash"></i></div>
                     <h4>No stores found</h4>
                     <p>Try adjusting your search or browse a different category</p>
                     @if(request()->hasAny(['search', 'category']))
-                    <a href="{{ route('rizqmall.home') }}" class="btn btn-primary btn-lg">
+                    <a href="{{ route('stores') }}" class="btn btn-primary btn-lg">
                         <i class="fas fa-redo me-2"></i>Browse All Stores
                     </a>
                     @endif
@@ -1106,7 +729,6 @@
             @endforelse
         </div>
 
-        {{-- Pagination --}}
         @if($stores->hasPages())
         <div class="d-flex justify-content-center mt-4 pb-4">
             {{ $stores->links('pagination::bootstrap-5') }}
@@ -1118,194 +740,7 @@
 @endsection
 
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
 <script>
-    let map;
-    let markersLayer;
-    let userMarker;
-
-    document.addEventListener('DOMContentLoaded', () => {
-        initMap();
-    });
-
-    function initMap() {
-        map = L.map('storeMap').setView([3.139, 101.6869], 11);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        markersLayer = L.layerGroup().addTo(map);
-
-        const stores = @json($stores->items());
-
-        if (stores.length > 0) {
-            const bounds = [];
-
-            stores.forEach(store => {
-                if (store.latitude && store.longitude) {
-                    const marker = L.marker([store.latitude, store.longitude])
-                        .addTo(markersLayer)
-                        .bindPopup(`
-                            <div style="text-align: center; min-width: 180px;">
-                                <strong style="font-size: 14px;">${store.name}</strong><br>
-                                <small style="color: #666;">${store.location || ''}</small><br>
-                                <a href="/stores/${store.slug}" class="btn btn-sm btn-primary mt-2" style="text-decoration: none;">
-                                    Visit Store
-                                </a>
-                            </div>
-                        `);
-
-                    bounds.push([store.latitude, store.longitude]);
-                }
-            });
-
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
-        }
-
-        // Nearby button
-        const nearbyBtn = document.getElementById('nearbyBtn');
-        let watchId = null;
-        let locationFound = false;
-
-        nearbyBtn.addEventListener('click', function() {
-            const btn = this;
-
-            if (!navigator.geolocation) {
-                showLocationError('Geolocation is not supported by your browser');
-                return;
-            }
-
-            locationFound = false;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
-            btn.disabled = true;
-
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-
-            const timeoutId = setTimeout(() => {
-                if (!locationFound) {
-                    navigator.geolocation.clearWatch(watchId);
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-location-arrow"></i> Nearby Me';
-                    showLocationError('Unable to detect your location. Please ensure location services are enabled.');
-                }
-            }, 15000);
-
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    if (locationFound) return;
-                    locationFound = true;
-
-                    clearTimeout(timeoutId);
-                    navigator.geolocation.clearWatch(watchId);
-
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-
-                    map.setView([lat, lng], 13);
-
-                    if (userMarker) {
-                        map.removeLayer(userMarker);
-                    }
-
-                    userMarker = L.circleMarker([lat, lng], {
-                        radius: 12,
-                        fillColor: "#3b82f6",
-                        color: "#fff",
-                        weight: 3,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map).bindPopup("<b>You are here</b>").openPopup();
-
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Located!';
-                    btn.classList.add('active');
-                    btn.disabled = false;
-
-                    setTimeout(() => {
-                        btn.innerHTML = '<i class="fas fa-location-arrow"></i> Nearby Me';
-                    }, 3000);
-                },
-                (error) => {
-                    if (error.code === error.PERMISSION_DENIED) {
-                        clearTimeout(timeoutId);
-                        navigator.geolocation.clearWatch(watchId);
-                        locationFound = true;
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-location-arrow"></i> Nearby Me';
-                        showLocationError('Location access denied. Please enable location permissions.');
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        });
-
-        function showLocationError(message) {
-            const existingToast = document.querySelector('.location-toast');
-            if (existingToast) existingToast.remove();
-
-            const toast = document.createElement('div');
-            toast.className = 'location-toast';
-            toast.innerHTML = `
-                <div style="
-                    position: fixed;
-                    bottom: 20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                    color: white;
-                    padding: 16px 24px;
-                    border-radius: 12px;
-                    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
-                    font-weight: 600;
-                    font-size: 14px;
-                    z-index: 10000;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    max-width: 90%;
-                ">
-                    <i class="fas fa-exclamation-circle" style="font-size: 18px;"></i>
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: rgba(255,255,255,0.2);
-                        border: none;
-                        color: white;
-                        padding: 4px 8px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        margin-left: 8px;
-                    ">×</button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 6000);
-        }
-    }
-
-    function toggleMap() {
-        const mapElement = document.getElementById('storeMap');
-        const btn = document.getElementById('toggleMapBtn');
-        const text = document.getElementById('mapToggleText');
-
-        if (mapElement.style.display === 'none') {
-            mapElement.style.display = 'block';
-            text.textContent = 'Hide Map';
-            btn.classList.add('active');
-            setTimeout(() => map.invalidateSize(), 100);
-        } else {
-            mapElement.style.display = 'none';
-            text.textContent = 'Show Map';
-            btn.classList.remove('active');
-        }
-    }
-
     function changeView(view) {
         const items = document.querySelectorAll('.store-item');
         const buttons = document.querySelectorAll('.view-btn');
@@ -1326,7 +761,6 @@
         }
     }
 
-    // Category Grid Drag-to-Scroll Functionality
     const slider = document.getElementById('categoryGrid');
     let isDown = false;
     let startX;
@@ -1335,57 +769,33 @@
     if (slider) {
         slider.addEventListener('mousedown', (e) => {
             isDown = true;
-            slider.classList.add('active');
             startX = e.pageX - slider.offsetLeft;
             scrollLeft = slider.scrollLeft;
             e.preventDefault();
         });
 
-        slider.addEventListener('mouseleave', () => {
-            isDown = false;
-            slider.classList.remove('active');
-        });
-
-        slider.addEventListener('mouseup', () => {
-            isDown = false;
-            slider.classList.remove('active');
-        });
+        slider.addEventListener('mouseleave', () => { isDown = false; });
+        slider.addEventListener('mouseup', () => { isDown = false; });
 
         slider.addEventListener('mousemove', (e) => {
             if (!isDown) return;
             e.preventDefault();
             const x = e.pageX - slider.offsetLeft;
-            const walk = (x - startX) * 2;
-            slider.scrollLeft = scrollLeft - walk;
+            slider.scrollLeft = scrollLeft - (x - startX) * 2;
         });
 
-        // Mouse wheel horizontal scroll
         slider.addEventListener('wheel', (e) => {
             if (e.deltaY !== 0) {
                 e.preventDefault();
                 slider.scrollLeft += e.deltaY;
             }
         });
-
-        // Prevent clicking links when dragging
-        const links = slider.querySelectorAll('a');
-        links.forEach(link => {
-            link.addEventListener('click', (e) => {
-                if (isDown) {
-                    e.preventDefault();
-                }
-            });
-        });
     }
 </script>
 
 <style>
-    /* Custom grid column for 5 items per row on XL screens */
     @media (min-width: 1200px) {
-        .col-xl-2-4 {
-            flex: 0 0 20%;
-            max-width: 20%;
-        }
+        .col-xl-2-4 { flex: 0 0 20%; max-width: 20%; }
     }
 </style>
 @endpush

@@ -39,7 +39,7 @@ Route::post('/register', [AuthController::class, 'register'])->name('customer.re
 |--------------------------------------------------------------------------
 */
 Route::get('/', [StoreController::class, 'home'])->name('rizqmall.home');
-Route::get('/stores', [StoreController::class, 'stores'])->name('stores');
+Route::get('/stores', [StoreController::class, 'storesSimple'])->name('stores');
 Route::get('/stores/{store:slug}', [StoreController::class, 'showProfile'])->name('store.profile');
 
 // Vendor Member Routes (Public - for QR code scans)

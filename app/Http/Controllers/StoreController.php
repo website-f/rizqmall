@@ -243,27 +243,67 @@ class StoreController extends Controller
     }
 
     /**
-     * Homepage showing all stores
+     * Homepage showing stores with map (full version)
      */
-    public function home()
+    public function home(Request $request)
     {
-        // Get ALL store categories (both active and inactive for display)
-        $storeCategories = StoreCategory::orderBy('sort_order')->get();
+        $query = Store::with(['category'])
+            ->withCount(['products' => function ($q) {
+                $q->where('status', 'published');
+            }])
+            ->where('is_active', true)
+            ->where('status', 'active');
 
-        // Get featured products from all categories
-        $featuredProducts = \App\Models\Product::where('status', 'published')
-            ->with(['images' => fn($q) => $q->where('is_primary', true), 'store'])
-            ->inRandomOrder()
-            ->limit(12)
-            ->get();
-
-        // Get user's wishlist product IDs
-        $wishlistProductIds = [];
-        if (auth()->check()) {
-            $wishlistProductIds = auth()->user()->wishlists()->pluck('product_id')->toArray();
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('location', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('products', function ($productQuery) use ($searchTerm) {
+                        $productQuery->where('name', 'like', "%{$searchTerm}%")
+                            ->orWhere('description', 'like', "%{$searchTerm}%");
+                    });
+            });
         }
 
-        return view('store.home', compact('storeCategories', 'featuredProducts', 'wishlistProductIds'));
+        // Category filter
+        if ($request->filled('category')) {
+            $query->where('store_category_id', $request->category);
+        }
+
+        // Location filter
+        if ($request->filled('location')) {
+            $query->where('location', 'like', "%{$request->location}%");
+        }
+
+        // Verified filter
+        if ($request->filled('verified') && $request->verified == '1') {
+            $query->where('is_verified', true);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort', 'name');
+        switch ($sortBy) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('products_count', 'desc');
+                break;
+            default:
+                $query->orderBy('name');
+        }
+
+        $stores = $query->paginate(12)->appends($request->except('page'));
+
+        // Get categories for filter dropdown with store counts
+        $categories = \App\Models\StoreCategory::withCount(['stores' => function ($q) {
+            $q->where('is_active', true)->where('status', 'active');
+        }])->orderBy('name')->get();
+
+        return view('store.stores', compact('stores', 'categories'));
     }
 
     /**
@@ -326,10 +366,66 @@ class StoreController extends Controller
 
         $stores = $query->paginate(12)->appends($request->except('page'));
 
-        // Get categories for filter dropdown
-        $categories = \App\Models\StoreCategory::orderBy('name')->get();
+        // Get categories for filter dropdown with store counts
+        $categories = \App\Models\StoreCategory::withCount(['stores' => function ($q) {
+            $q->where('is_active', true)->where('status', 'active');
+        }])->orderBy('name')->get();
 
         return view('store.stores', compact('stores', 'categories'));
+    }
+
+    /**
+     * Show stores page (simple version without map - for /stores route)
+     */
+    public function storesSimple(Request $request)
+    {
+        $query = Store::with(['category'])
+            ->withCount(['products' => function ($q) {
+                $q->where('status', 'published');
+            }])
+            ->where('is_active', true)
+            ->where('status', 'active');
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('location', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('products', function ($productQuery) use ($searchTerm) {
+                        $productQuery->where('name', 'like', "%{$searchTerm}%")
+                            ->orWhere('description', 'like', "%{$searchTerm}%");
+                    });
+            });
+        }
+
+        // Category filter
+        if ($request->filled('category')) {
+            $query->where('store_category_id', $request->category);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort', 'name');
+        switch ($sortBy) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('products_count', 'desc');
+                break;
+            default:
+                $query->orderBy('name');
+        }
+
+        $stores = $query->paginate(12)->appends($request->except('page'));
+
+        // Get categories for filter dropdown with store counts
+        $categories = \App\Models\StoreCategory::withCount(['stores' => function ($q) {
+            $q->where('is_active', true)->where('status', 'active');
+        }])->orderBy('name')->get();
+
+        return view('store.stores-simple', compact('stores', 'categories'));
     }
 
     /**
