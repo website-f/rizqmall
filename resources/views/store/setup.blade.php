@@ -350,6 +350,63 @@
                 </div>
             </div>
 
+            <!-- Social Media Links -->
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-share-alt"></i> Social Media Links <span class="text-muted fs-6 fw-normal">(Optional)</span></h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-facebook text-primary me-2"></i>Facebook</label>
+                            <input class="form-control" type="url" name="facebook_url"
+                                placeholder="https://facebook.com/yourpage" value="{{ old('facebook_url') }}" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-instagram text-danger me-2"></i>Instagram</label>
+                            <input class="form-control" type="url" name="instagram_url"
+                                placeholder="https://instagram.com/yourpage" value="{{ old('instagram_url') }}" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-twitter text-info me-2"></i>Twitter / X</label>
+                            <input class="form-control" type="url" name="twitter_url"
+                                placeholder="https://twitter.com/yourhandle" value="{{ old('twitter_url') }}" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-tiktok me-2"></i>TikTok</label>
+                            <input class="form-control" type="url" name="tiktok_url"
+                                placeholder="https://tiktok.com/@yourhandle" value="{{ old('tiktok_url') }}" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-youtube text-danger me-2"></i>YouTube</label>
+                            <input class="form-control" type="url" name="youtube_url"
+                                placeholder="https://youtube.com/@yourchannel" value="{{ old('youtube_url') }}" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-whatsapp text-success me-2"></i>WhatsApp</label>
+                            <input class="form-control" type="text" name="whatsapp_number"
+                                placeholder="+60123456789" value="{{ old('whatsapp_number') }}" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fab fa-telegram text-info me-2"></i>Telegram</label>
+                            <input class="form-control" type="url" name="telegram_url"
+                                placeholder="https://t.me/yourhandle" value="{{ old('telegram_url') }}" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-globe text-secondary me-2"></i>Website</label>
+                            <input class="form-control" type="url" name="website_url"
+                                placeholder="https://yourwebsite.com" value="{{ old('website_url') }}" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Location -->
             <div class="card">
                 <div class="card-header">

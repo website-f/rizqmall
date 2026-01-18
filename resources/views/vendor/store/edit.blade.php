@@ -168,6 +168,71 @@
                         </div>
                     </div>
 
+                    <!-- Social Media Links -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0"><i class="fas fa-share-alt me-2"></i>Social Media Links</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-facebook text-primary me-2"></i>Facebook</label>
+                                    <input type="url" name="facebook_url" class="form-control"
+                                        value="{{ old('facebook_url', $store->facebook_url) }}"
+                                        placeholder="https://facebook.com/yourpage">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-instagram text-danger me-2"></i>Instagram</label>
+                                    <input type="url" name="instagram_url" class="form-control"
+                                        value="{{ old('instagram_url', $store->instagram_url) }}"
+                                        placeholder="https://instagram.com/yourpage">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-twitter text-info me-2"></i>Twitter / X</label>
+                                    <input type="url" name="twitter_url" class="form-control"
+                                        value="{{ old('twitter_url', $store->twitter_url) }}"
+                                        placeholder="https://twitter.com/yourhandle">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-tiktok me-2"></i>TikTok</label>
+                                    <input type="url" name="tiktok_url" class="form-control"
+                                        value="{{ old('tiktok_url', $store->tiktok_url) }}"
+                                        placeholder="https://tiktok.com/@yourhandle">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-youtube text-danger me-2"></i>YouTube</label>
+                                    <input type="url" name="youtube_url" class="form-control"
+                                        value="{{ old('youtube_url', $store->youtube_url) }}"
+                                        placeholder="https://youtube.com/@yourchannel">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-whatsapp text-success me-2"></i>WhatsApp</label>
+                                    <input type="text" name="whatsapp_number" class="form-control"
+                                        value="{{ old('whatsapp_number', $store->whatsapp_number) }}"
+                                        placeholder="+60123456789">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fab fa-telegram text-info me-2"></i>Telegram</label>
+                                    <input type="url" name="telegram_url" class="form-control"
+                                        value="{{ old('telegram_url', $store->telegram_url) }}"
+                                        placeholder="https://t.me/yourhandle">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><i class="fas fa-globe text-secondary me-2"></i>Website</label>
+                                    <input type="url" name="website_url" class="form-control"
+                                        value="{{ old('website_url', $store->website_url) }}"
+                                        placeholder="https://yourwebsite.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Location -->
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-white border-bottom">

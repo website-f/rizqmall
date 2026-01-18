@@ -32,6 +32,18 @@ class Product extends Model
         'low_stock_threshold',
         'track_inventory',
         'allow_backorder',
+        // Marketplace/Bulk order fields
+        'allow_bulk_order',
+        'minimum_order_quantity',
+        'bulk_price',
+        'bulk_quantity_threshold',
+        // Preorder fields
+        'is_preorder',
+        'preorder_release_date',
+        'preorder_limit',
+        'preorder_note',
+        'lead_time_days',
+        // Physical attributes
         'weight',
         'length',
         'width',
@@ -64,6 +76,7 @@ class Product extends Model
         'regular_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'bulk_price' => 'decimal:2',
         'weight' => 'decimal:2',
         'is_fragile' => 'boolean',
         'is_biodegradable' => 'boolean',
@@ -72,7 +85,10 @@ class Product extends Model
         'has_expiry' => 'boolean',
         'track_inventory' => 'boolean',
         'allow_backorder' => 'boolean',
+        'allow_bulk_order' => 'boolean',
+        'is_preorder' => 'boolean',
         'expiry_date' => 'date',
+        'preorder_release_date' => 'date',
         'service_days' => 'array',
     ];
 
@@ -206,5 +222,70 @@ class Product extends Model
     public function scopeForStore($query, $storeId)
     {
         return $query->where('store_id', $storeId);
+    }
+
+    public function scopeBulkAvailable($query)
+    {
+        return $query->where('allow_bulk_order', true);
+    }
+
+    public function scopePreorder($query)
+    {
+        return $query->where('is_preorder', true);
+    }
+
+    /**
+     * Get the effective price based on quantity (for bulk orders)
+     */
+    public function getEffectivePrice($quantity = 1)
+    {
+        // If bulk order is enabled and quantity meets threshold
+        if ($this->allow_bulk_order && $this->bulk_price && $this->bulk_quantity_threshold) {
+            if ($quantity >= $this->bulk_quantity_threshold) {
+                return $this->bulk_price;
+            }
+        }
+
+        // Return sale price if available, otherwise regular price
+        return $this->price;
+    }
+
+    /**
+     * Check if quantity meets minimum order requirement
+     */
+    public function meetsMinimumOrder($quantity)
+    {
+        return $quantity >= ($this->minimum_order_quantity ?? 1);
+    }
+
+    /**
+     * Check if this is a marketplace product (bulk/preorder enabled)
+     */
+    public function getIsMarketplaceProductAttribute()
+    {
+        return $this->allow_bulk_order || $this->is_preorder;
+    }
+
+    /**
+     * Get availability status text
+     */
+    public function getAvailabilityStatusAttribute()
+    {
+        if ($this->is_preorder) {
+            if ($this->preorder_release_date) {
+                return 'Preorder - Available ' . $this->preorder_release_date->format('d M Y');
+            }
+            return 'Preorder';
+        }
+
+        if ($this->stock_quantity <= 0 && !$this->allow_backorder) {
+            return 'Out of Stock';
+        }
+
+        if ($this->stock_quantity <= $this->low_stock_threshold) {
+            return 'Low Stock';
+        }
+
+        return 'In Stock';
     }
 }

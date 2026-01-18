@@ -392,6 +392,91 @@
                         </div>
                     </div>
 
+                    <!-- Marketplace Options (Bulk & Preorder) -->
+                    @if ($type === 'product')
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">
+                                <i class="fas fa-store text-primary"></i> Marketplace Options
+                                <span class="badge bg-info ms-2">Optional</span>
+                            </h4>
+                            <p class="text-muted small mb-4">Enable bulk ordering or preorder features for events, businesses, and organizations.</p>
+
+                            <!-- Bulk Order Section -->
+                            <div class="border rounded p-3 mb-4">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="allowBulkOrder"
+                                        name="allow_bulk_order" value="1" {{ old('allow_bulk_order') ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="allowBulkOrder">
+                                        <i class="fas fa-boxes text-warning me-2"></i> Enable Bulk Orders
+                                    </label>
+                                    <div class="form-text">Allow customers to order in large quantities with special pricing</div>
+                                </div>
+
+                                <div class="row g-3 bulk-order-fields" style="{{ old('allow_bulk_order') ? '' : 'display: none;' }}">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Minimum Order Quantity <span class="text-danger">*</span></label>
+                                        <input class="form-control" type="number" name="minimum_order_quantity"
+                                            placeholder="10" value="{{ old('minimum_order_quantity', 1) }}" min="1" />
+                                        <small class="text-muted">Minimum quantity per order</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Bulk Price (RM)</label>
+                                        <input class="form-control" type="number" step="0.01" name="bulk_price"
+                                            placeholder="69.00" value="{{ old('bulk_price') }}" />
+                                        <small class="text-muted">Special price for bulk orders</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Bulk Quantity Threshold</label>
+                                        <input class="form-control" type="number" name="bulk_quantity_threshold"
+                                            placeholder="50" value="{{ old('bulk_quantity_threshold') }}" />
+                                        <small class="text-muted">Min qty to get bulk price</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Lead Time (Days)</label>
+                                        <input class="form-control" type="number" name="lead_time_days"
+                                            placeholder="7" value="{{ old('lead_time_days') }}" />
+                                        <small class="text-muted">Days needed to prepare bulk orders</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preorder Section -->
+                            <div class="border rounded p-3">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="isPreorder"
+                                        name="is_preorder" value="1" {{ old('is_preorder') ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="isPreorder">
+                                        <i class="fas fa-calendar-alt text-success me-2"></i> Enable Preorder
+                                    </label>
+                                    <div class="form-text">Allow customers to order before product is available</div>
+                                </div>
+
+                                <div class="row g-3 preorder-fields" style="{{ old('is_preorder') ? '' : 'display: none;' }}">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Release Date</label>
+                                        <input class="form-control" type="date" name="preorder_release_date"
+                                            value="{{ old('preorder_release_date') }}" min="{{ date('Y-m-d', strtotime('+1 day')) }}" />
+                                        <small class="text-muted">When product will be available</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Preorder Limit</label>
+                                        <input class="form-control" type="number" name="preorder_limit"
+                                            placeholder="100" value="{{ old('preorder_limit') }}" />
+                                        <small class="text-muted">Max preorder units (optional)</small>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Preorder Note</label>
+                                        <textarea class="form-control" name="preorder_note" rows="2"
+                                            placeholder="e.g., Expected delivery in 2-3 weeks after release date">{{ old('preorder_note') }}</textarea>
+                                        <small class="text-muted">Information shown to customers about preorder</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Variant Builder -->
                     @if (in_array($type, ['product', 'pharmacy']))
                         <div class="card" id="variantBuilder" style="display: none;">
@@ -1041,6 +1126,27 @@
                     const expiryField = document.getElementById('expiryField');
                     if (expiryField) {
                         expiryField.style.display = this.checked ? 'block' : 'none';
+                    }
+                });
+            }
+
+            // ========== Marketplace Options Toggle ==========
+            const allowBulkOrderCheckbox = document.getElementById('allowBulkOrder');
+            if (allowBulkOrderCheckbox) {
+                allowBulkOrderCheckbox.addEventListener('change', function() {
+                    const bulkFields = document.querySelector('.bulk-order-fields');
+                    if (bulkFields) {
+                        bulkFields.style.display = this.checked ? 'flex' : 'none';
+                    }
+                });
+            }
+
+            const isPreorderCheckbox = document.getElementById('isPreorder');
+            if (isPreorderCheckbox) {
+                isPreorderCheckbox.addEventListener('change', function() {
+                    const preorderFields = document.querySelector('.preorder-fields');
+                    if (preorderFields) {
+                        preorderFields.style.display = this.checked ? 'flex' : 'none';
                     }
                 });
             }

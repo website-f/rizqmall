@@ -66,6 +66,13 @@ class CheckoutController extends Controller
     {
         $user = Auth::user();
 
+        // Validate schedule inputs
+        $request->validate([
+            'preferred_date' => 'required|date|after:today',
+            'preferred_time' => 'required|string',
+            'shipping_method' => 'required|in:standard,express,pickup',
+        ]);
+
         // Get cart through Cart model
         $cart = Cart::where('user_id', $user->id)
             ->with(['items.product.images', 'items.variant'])
@@ -82,6 +89,15 @@ class CheckoutController extends Controller
         $orders = [];
         $totalAmount = 0;
 
+        // Calculate delivery fee based on shipping method
+        $deliveryFee = 0;
+        $deliveryType = $request->shipping_method;
+        if ($deliveryType === 'standard') {
+            $deliveryFee = 5.00;
+        } elseif ($deliveryType === 'express') {
+            $deliveryFee = 15.00;
+        }
+
         // Store Logic: create orders
         foreach ($itemsByStore as $storeId => $items) {
             $storeSubtotal = $items->sum(function ($item) {
@@ -93,7 +109,7 @@ class CheckoutController extends Controller
             // Ensure subtotal is a valid number
             $storeSubtotal = floatval($storeSubtotal) ?: 0;
             $tax = round($storeSubtotal * 0.06, 2);
-            $total = round($storeSubtotal + $tax, 2);
+            $total = round($storeSubtotal + $tax + $deliveryFee, 2);
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -104,10 +120,14 @@ class CheckoutController extends Controller
                 'payment_method' => 'toyyibpay', // Now using VARCHAR after migration
                 'subtotal' => $storeSubtotal,
                 'tax' => $tax,
-                'delivery_fee' => 0,
+                'delivery_fee' => $deliveryFee,
+                'delivery_type' => $deliveryType,
                 'total' => $total,
                 'shipping_address' => $user->default_address ? $user->default_address->toArray() : [],
                 'billing_address' => $user->default_address ? $user->default_address->toArray() : [],
+                'preferred_date' => $request->preferred_date,
+                'preferred_time' => $request->preferred_time,
+                'customer_notes' => $request->notes,
             ]);
 
             foreach ($items as $item) {

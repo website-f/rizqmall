@@ -881,6 +881,54 @@
                         <span class="store-rating-count">({{ $store->rating_count }} reviews)</span>
                     </div>
 
+                    {{-- Social Media Links --}}
+                    @if($store->facebook_url || $store->instagram_url || $store->twitter_url || $store->tiktok_url || $store->youtube_url || $store->whatsapp_number || $store->telegram_url || $store->website_url)
+                    <div class="store-social-links mb-4">
+                        <div class="d-flex flex-wrap gap-2">
+                            @if($store->facebook_url)
+                            <a href="{{ $store->facebook_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #1877f2; color: white;" title="Facebook">
+                                <i class="fab fa-facebook-f me-1"></i> Facebook
+                            </a>
+                            @endif
+                            @if($store->instagram_url)
+                            <a href="{{ $store->instagram_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white;" title="Instagram">
+                                <i class="fab fa-instagram me-1"></i> Instagram
+                            </a>
+                            @endif
+                            @if($store->twitter_url)
+                            <a href="{{ $store->twitter_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #000; color: white;" title="Twitter / X">
+                                <i class="fab fa-x-twitter me-1"></i> X
+                            </a>
+                            @endif
+                            @if($store->tiktok_url)
+                            <a href="{{ $store->tiktok_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #000; color: white;" title="TikTok">
+                                <i class="fab fa-tiktok me-1"></i> TikTok
+                            </a>
+                            @endif
+                            @if($store->youtube_url)
+                            <a href="{{ $store->youtube_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #ff0000; color: white;" title="YouTube">
+                                <i class="fab fa-youtube me-1"></i> YouTube
+                            </a>
+                            @endif
+                            @if($store->whatsapp_number)
+                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $store->whatsapp_number) }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #25d366; color: white;" title="WhatsApp">
+                                <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                            </a>
+                            @endif
+                            @if($store->telegram_url)
+                            <a href="{{ $store->telegram_url }}" target="_blank" class="btn btn-sm rounded-pill" style="background: #0088cc; color: white;" title="Telegram">
+                                <i class="fab fa-telegram me-1"></i> Telegram
+                            </a>
+                            @endif
+                            @if($store->website_url)
+                            <a href="{{ $store->website_url }}" target="_blank" class="btn btn-sm rounded-pill btn-outline-secondary" title="Website">
+                                <i class="fas fa-globe me-1"></i> Website
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- Get Directions Button --}}
                     @if ($store->latitude && $store->longitude)
                     <div class="mb-4">

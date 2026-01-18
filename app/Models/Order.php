@@ -32,6 +32,8 @@ class Order extends Model
         'customer_notes',
         'vendor_notes',
         'cancellation_reason',
+        'preferred_date',
+        'preferred_time',
     ];
 
     protected $casts = [
@@ -44,6 +46,7 @@ class Order extends Model
         'billing_address' => 'array',
         'estimated_delivery' => 'datetime',
         'delivered_at' => 'datetime',
+        'preferred_date' => 'date',
     ];
 
     // Relationships

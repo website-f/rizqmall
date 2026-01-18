@@ -153,7 +153,8 @@
     <div class="category-grid">
         @foreach($categories as $category)
             @php
-                $isAvailable = in_array($category->slug, ['marketplace', 'services', 'pharmacy', 'premises', 'hardware']);
+                // All categories are available except contractors
+                $isAvailable = $category->slug !== 'contractors';
             @endphp
             
             <div class="category-card {{ !$isAvailable ? 'disabled' : '' }}"

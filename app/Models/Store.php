@@ -28,7 +28,16 @@ class Store extends Model
         'is_active',
         'is_verified',
         'business_registration_no',
-        'tax_id'
+        'tax_id',
+        // Social Media
+        'facebook_url',
+        'instagram_url',
+        'twitter_url',
+        'tiktok_url',
+        'youtube_url',
+        'whatsapp_number',
+        'telegram_url',
+        'website_url',
     ];
 
     protected $casts = [

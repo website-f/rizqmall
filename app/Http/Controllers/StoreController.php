@@ -148,6 +148,15 @@ class StoreController extends Controller
             'business_registration_number' => 'nullable|string|max:100',
             'business_registration_no' => 'nullable|string|max:100',
             'tax_id' => 'nullable|string|max:100',
+            // Social Media
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'twitter_url' => 'nullable|url|max:255',
+            'tiktok_url' => 'nullable|url|max:255',
+            'youtube_url' => 'nullable|url|max:255',
+            'whatsapp_number' => 'nullable|string|max:50',
+            'telegram_url' => 'nullable|url|max:255',
+            'website_url' => 'nullable|url|max:255',
         ]);
 
         // Generate unique slug
@@ -222,6 +231,15 @@ class StoreController extends Controller
             'tax_id' => $request->tax_id,
             'status' => 'active',
             'is_active' => true,
+            // Social Media
+            'facebook_url' => $request->facebook_url,
+            'instagram_url' => $request->instagram_url,
+            'twitter_url' => $request->twitter_url,
+            'tiktok_url' => $request->tiktok_url,
+            'youtube_url' => $request->youtube_url,
+            'whatsapp_number' => $request->whatsapp_number,
+            'telegram_url' => $request->telegram_url,
+            'website_url' => $request->website_url,
         ]);
 
         // Clear session
@@ -494,6 +512,15 @@ class StoreController extends Controller
             'business_registration_no' => 'nullable|string|max:100',
             'business_registration_number' => 'nullable|string|max:100',
             'tax_id' => 'nullable|string|max:100',
+            // Social Media
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'twitter_url' => 'nullable|url|max:255',
+            'tiktok_url' => 'nullable|url|max:255',
+            'youtube_url' => 'nullable|url|max:255',
+            'whatsapp_number' => 'nullable|string|max:50',
+            'telegram_url' => 'nullable|url|max:255',
+            'website_url' => 'nullable|url|max:255',
         ]);
 
         $store->update([
@@ -507,6 +534,15 @@ class StoreController extends Controller
             'business_registration_no' => $request->business_registration_no,
             'business_registration_number' => $request->business_registration_number,
             'tax_id' => $request->tax_id,
+            // Social Media
+            'facebook_url' => $request->facebook_url,
+            'instagram_url' => $request->instagram_url,
+            'twitter_url' => $request->twitter_url,
+            'tiktok_url' => $request->tiktok_url,
+            'youtube_url' => $request->youtube_url,
+            'whatsapp_number' => $request->whatsapp_number,
+            'telegram_url' => $request->telegram_url,
+            'website_url' => $request->website_url,
         ]);
 
         // Handle images if present

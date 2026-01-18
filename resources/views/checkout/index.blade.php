@@ -168,10 +168,48 @@
                     </div>
                 </div>
 
+                <!-- Delivery/Pickup Schedule -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0">3. Delivery/Pickup Schedule</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Select your preferred date and time for delivery or pickup
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="preferred_date" class="form-label">Preferred Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="preferred_date" name="preferred_date"
+                                    min="{{ date('Y-m-d', strtotime('+1 day')) }}"
+                                    max="{{ date('Y-m-d', strtotime('+30 days')) }}"
+                                    required>
+                                <small class="text-muted">Available dates: Tomorrow to 30 days from now</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="preferred_time" class="form-label">Preferred Time <span class="text-danger">*</span></label>
+                                <select class="form-select" id="preferred_time" name="preferred_time" required>
+                                    <option value="">Select Time Slot</option>
+                                    <option value="09:00-12:00">Morning (9:00 AM - 12:00 PM)</option>
+                                    <option value="12:00-15:00">Afternoon (12:00 PM - 3:00 PM)</option>
+                                    <option value="15:00-18:00">Evening (3:00 PM - 6:00 PM)</option>
+                                    <option value="18:00-21:00">Night (6:00 PM - 9:00 PM)</option>
+                                </select>
+                                <small class="text-muted">Choose a time slot that works for you</small>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0" id="scheduleNote">
+                            <i class="fas fa-truck me-2"></i>
+                            <span id="scheduleNoteText">Your order will be delivered on your selected date and time.</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Payment Method -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">3. Payment Method</h5>
+                        <h5 class="mb-0">4. Payment Method</h5>
                     </div>
                     <div class="card-body">
                         <div class="form-check mb-3 p-3 border rounded">
@@ -429,22 +467,53 @@
 
 @push('scripts')
 <script>
-    // Update shipping fee based on selected method
+    // Update shipping fee and schedule note based on selected method
     document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
         radio.addEventListener('change', function() {
             const shippingFee = document.getElementById('shipping-fee');
             const total = document.getElementById('total');
             const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace('RM ',
                 '').replace(',', ''));
+            const scheduleNote = document.getElementById('scheduleNote');
+            const scheduleNoteText = document.getElementById('scheduleNoteText');
 
             let fee = 0;
-            if (this.value === 'standard') fee = 5.00;
-            if (this.value === 'express') fee = 15.00;
-            if (this.value === 'pickup') fee = 0.00;
+            if (this.value === 'standard') {
+                fee = 5.00;
+                scheduleNote.className = 'alert alert-info mt-3 mb-0';
+                scheduleNote.querySelector('i').className = 'fas fa-truck me-2';
+                scheduleNoteText.textContent = 'Your order will be delivered on your selected date and time.';
+            }
+            if (this.value === 'express') {
+                fee = 15.00;
+                scheduleNote.className = 'alert alert-warning mt-3 mb-0';
+                scheduleNote.querySelector('i').className = 'fas fa-shipping-fast me-2';
+                scheduleNoteText.textContent = 'Express delivery! Your order will arrive on your selected date within the chosen time slot.';
+            }
+            if (this.value === 'pickup') {
+                fee = 0.00;
+                scheduleNote.className = 'alert alert-success mt-3 mb-0';
+                scheduleNote.querySelector('i').className = 'fas fa-store me-2';
+                scheduleNoteText.textContent = 'Self pickup selected. Please come to the store on your selected date during the chosen time slot.';
+            }
 
             shippingFee.textContent = fee === 0 ? 'FREE' : 'RM ' + fee.toFixed(2);
             total.textContent = 'RM ' + (subtotal + fee).toFixed(2);
         });
+    });
+
+    // Set minimum date for preferred date (tomorrow)
+    document.addEventListener('DOMContentLoaded', function() {
+        const preferredDate = document.getElementById('preferred_date');
+        if (preferredDate) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            preferredDate.min = tomorrow.toISOString().split('T')[0];
+
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 30);
+            preferredDate.max = maxDate.toISOString().split('T')[0];
+        }
     });
 
     // Handle add address form submission

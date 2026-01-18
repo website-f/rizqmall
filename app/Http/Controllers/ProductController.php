@@ -106,6 +106,16 @@ class ProductController extends Controller
                 'max_temperature' => 'nullable|string|max:50',
                 'has_expiry' => 'nullable|boolean',
                 'expiry_date' => 'nullable|date',
+                // Marketplace fields
+                'allow_bulk_order' => 'nullable|boolean',
+                'minimum_order_quantity' => 'nullable|integer|min:1',
+                'bulk_price' => 'nullable|numeric|min:0',
+                'bulk_quantity_threshold' => 'nullable|integer|min:1',
+                'is_preorder' => 'nullable|boolean',
+                'preorder_release_date' => 'nullable|date|after:today',
+                'preorder_limit' => 'nullable|integer|min:1',
+                'preorder_note' => 'nullable|string|max:500',
+                'lead_time_days' => 'nullable|integer|min:0',
             ]);
         } elseif ($request->type === 'service') {
             $rules = array_merge($rules, [
@@ -182,6 +192,17 @@ class ProductController extends Controller
                 $product->max_temperature = $request->has('is_frozen') ? ($validated['max_temperature'] ?? null) : null;
                 $product->has_expiry = $request->has('has_expiry');
                 $product->expiry_date = $request->has('has_expiry') ? ($validated['expiry_date'] ?? null) : null;
+
+                // Marketplace fields
+                $product->allow_bulk_order = $request->has('allow_bulk_order');
+                $product->minimum_order_quantity = $validated['minimum_order_quantity'] ?? 1;
+                $product->bulk_price = $validated['bulk_price'] ?? null;
+                $product->bulk_quantity_threshold = $validated['bulk_quantity_threshold'] ?? null;
+                $product->is_preorder = $request->has('is_preorder');
+                $product->preorder_release_date = $validated['preorder_release_date'] ?? null;
+                $product->preorder_limit = $validated['preorder_limit'] ?? null;
+                $product->preorder_note = $validated['preorder_note'] ?? null;
+                $product->lead_time_days = $validated['lead_time_days'] ?? null;
             } elseif ($validated['type'] === 'service') {
                 $product->service_duration = $validated['service_duration'];
                 $product->service_availability = $validated['service_availability'];
@@ -537,6 +558,17 @@ class ProductController extends Controller
             $rules['requires_prescription'] = 'nullable|boolean';
             $rules['has_expiry'] = 'nullable|boolean';
             $rules['expiry_date'] = 'nullable|date|after:today';
+        } elseif ($product->type === 'product') {
+            // Marketplace fields
+            $rules['allow_bulk_order'] = 'nullable|boolean';
+            $rules['minimum_order_quantity'] = 'nullable|integer|min:1';
+            $rules['bulk_price'] = 'nullable|numeric|min:0';
+            $rules['bulk_quantity_threshold'] = 'nullable|integer|min:1';
+            $rules['is_preorder'] = 'nullable|boolean';
+            $rules['preorder_release_date'] = 'nullable|date|after:today';
+            $rules['preorder_limit'] = 'nullable|integer|min:1';
+            $rules['preorder_note'] = 'nullable|string|max:500';
+            $rules['lead_time_days'] = 'nullable|integer|min:0';
         }
 
         $validated = $request->validate($rules);
@@ -568,6 +600,17 @@ class ProductController extends Controller
                 $product->requires_prescription = $validated['requires_prescription'] ?? false;
                 $product->has_expiry = $validated['has_expiry'] ?? false;
                 $product->expiry_date = $validated['expiry_date'] ?? null;
+            } elseif ($product->type === 'product') {
+                // Marketplace fields
+                $product->allow_bulk_order = $request->has('allow_bulk_order');
+                $product->minimum_order_quantity = $validated['minimum_order_quantity'] ?? 1;
+                $product->bulk_price = $validated['bulk_price'] ?? null;
+                $product->bulk_quantity_threshold = $validated['bulk_quantity_threshold'] ?? null;
+                $product->is_preorder = $request->has('is_preorder');
+                $product->preorder_release_date = $validated['preorder_release_date'] ?? null;
+                $product->preorder_limit = $validated['preorder_limit'] ?? null;
+                $product->preorder_note = $validated['preorder_note'] ?? null;
+                $product->lead_time_days = $validated['lead_time_days'] ?? null;
             }
 
             $product->save();
