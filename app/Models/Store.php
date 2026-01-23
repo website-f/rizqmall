@@ -25,6 +25,7 @@ class Store extends Model
         'location',
         'latitude',
         'longitude',
+        'status',
         'is_active',
         'is_verified',
         'business_registration_no',
