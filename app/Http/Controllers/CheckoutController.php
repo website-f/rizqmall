@@ -10,6 +10,8 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
 
 class CheckoutController extends Controller
 {
@@ -138,10 +140,11 @@ class CheckoutController extends Controller
                 $itemTax = round($itemSubtotal * 0.06, 2);
                 $itemTotal = round($itemSubtotal + $itemTax, 2);
 
-                // Get product image
+                // Get product image safely
                 $productImage = null;
-                if ($item->product->images && $item->product->images->isNotEmpty()) {
-                    $productImage = $item->product->images->first()->url ?? $item->product->images->first()->image_url ?? null;
+                if ($item->product && $item->product->images && $item->product->images->isNotEmpty()) {
+                    $firstImage = $item->product->images->first();
+                    $productImage = $firstImage->url ?? ($firstImage->path ? asset('storage/' . $firstImage->path) : null);
                 }
 
                 OrderItem::create([
@@ -286,23 +289,78 @@ class CheckoutController extends Controller
             return response('Missing billcode', 400);
         }
 
+        // Get orders for this payment
+        $orders = Order::where('payment_reference', $billCode)->get();
+
+        if ($orders->isEmpty()) {
+            Log::error('No orders found for billcode: ' . $billCode);
+            return response('Orders not found', 404);
+        }
+
         if ($status == 1) {
-            // Payment successful
+            // Payment successful - only process if not already paid
+            $firstOrder = $orders->first();
+            if ($firstOrder->payment_status !== 'paid') {
+                // Update order status
+                Order::where('payment_reference', $billCode)->update([
+                    'payment_status' => 'paid',
+                    'status' => 'confirmed'
+                ]);
+
+                // Decrement stock for each order item
+                $this->decrementStockForOrders($orders);
+
+                // Clear user's cart (extra safety measure)
+                $userId = $firstOrder->user_id;
+                $cart = Cart::where('user_id', $userId)->first();
+                if ($cart) {
+                    $cart->items()->delete();
+                }
+
+                Log::info('Payment confirmed and stock decremented for bill: ' . $billCode);
+            }
+        } elseif ($status == 3) {
+            // Payment failed - restore stock if it was decremented
             Order::where('payment_reference', $billCode)->update([
-                'payment_status' => 'paid',
-                'status' => 'confirmed'
+                'payment_status' => 'failed',
+                'status' => 'cancelled'
             ]);
-            Log::info('Payment confirmed for bill: ' . $billCode);
+            Log::info('Payment failed for bill: ' . $billCode);
         } else {
-            // Payment failed or pending
+            // Payment pending
             Order::where('payment_reference', $billCode)->update([
-                'payment_status' => $status == 3 ? 'failed' : 'pending',
-                'status' => $status == 3 ? 'cancelled' : 'pending'
+                'payment_status' => 'pending',
+                'status' => 'pending'
             ]);
-            Log::info('Payment status updated for bill: ' . $billCode . ' Status: ' . $status);
+            Log::info('Payment pending for bill: ' . $billCode);
         }
 
         return response('OK');
+    }
+
+    /**
+     * Decrement stock for all items in the given orders
+     */
+    private function decrementStockForOrders($orders)
+    {
+        foreach ($orders as $order) {
+            $order->load('items');
+            foreach ($order->items as $item) {
+                // Decrement product variant stock if applicable
+                if ($item->variant_id) {
+                    ProductVariant::where('id', $item->variant_id)
+                        ->where('stock_quantity', '>=', $item->quantity)
+                        ->decrement('stock_quantity', $item->quantity);
+                }
+
+                // Decrement main product stock
+                if ($item->product_id) {
+                    Product::where('id', $item->product_id)
+                        ->where('stock_quantity', '>=', $item->quantity)
+                        ->decrement('stock_quantity', $item->quantity);
+                }
+            }
+        }
     }
 
     public function success(Request $request, $orderId)
@@ -313,13 +371,27 @@ class CheckoutController extends Controller
         $statusId = $request->status_id;
         $billCode = $request->billcode;
 
-        // Update order if status provided in return URL
-        if ($billCode && $statusId) {
-            if ($statusId == 1) {
+        // Update order if status provided in return URL (fallback if callback is slow)
+        if ($billCode && $statusId == 1) {
+            // Only process if not already paid (prevent double processing)
+            if ($order->payment_status !== 'paid') {
+                $orders = Order::where('payment_reference', $billCode)->get();
+
                 Order::where('payment_reference', $billCode)->update([
                     'payment_status' => 'paid',
                     'status' => 'confirmed'
                 ]);
+
+                // Decrement stock (if callback hasn't done it already)
+                $this->decrementStockForOrders($orders);
+
+                // Clear user's cart
+                $cart = Cart::where('user_id', $order->user_id)->first();
+                if ($cart) {
+                    $cart->items()->delete();
+                }
+
+                Log::info('Payment confirmed via success page for bill: ' . $billCode);
             }
             // Reload the order to get updated status
             $order->refresh();

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Wishlist;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -98,12 +100,20 @@ class CustomerDashboardController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
+        // Only restore stock if the order was paid (stock was decremented)
+        $shouldRestoreStock = $order->payment_status === 'paid';
+
         $order->update([
             'status' => 'cancelled',
             'cancellation_reason' => $request->reason,
         ]);
 
-        // TODO: Restore product stock
+        // Restore product stock if payment was completed
+        if ($shouldRestoreStock) {
+            $this->restoreStockForOrder($order);
+            Log::info('Stock restored for cancelled order: ' . $order->order_number);
+        }
+
         // TODO: Notify vendor
         // event(new OrderCancelled($order));
 
@@ -369,6 +379,28 @@ class CustomerDashboardController extends Controller
             $product->rating_average = $product->reviews()->avg('rating');
             $product->rating_count = $product->reviews()->count();
             $product->save();
+        }
+    }
+
+    /**
+     * Restore stock for a cancelled order
+     */
+    private function restoreStockForOrder(Order $order)
+    {
+        $order->load('items');
+
+        foreach ($order->items as $item) {
+            // Restore product variant stock if applicable
+            if ($item->variant_id) {
+                ProductVariant::where('id', $item->variant_id)
+                    ->increment('stock_quantity', $item->quantity);
+            }
+
+            // Restore main product stock
+            if ($item->product_id) {
+                Product::where('id', $item->product_id)
+                    ->increment('stock_quantity', $item->quantity);
+            }
         }
     }
 }
