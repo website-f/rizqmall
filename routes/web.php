@@ -11,6 +11,7 @@ use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\ProfileController; // Class name in ProfileDashboardController.php
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\VendorMemberController;
+use App\Http\Controllers\AdminSettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,10 +61,18 @@ Route::middleware(['auth', 'verify.vendor'])->group(function () {
     Route::get('/vendor/store/{store}/ref-code', [VendorMemberController::class, 'getRefCode'])->name('vendor.member.ref-code');
 });
 
-// Products
+// Products & Sections
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-Route::get('/services', [ProductController::class, 'index'])->defaults('type', 'service')->name('services.index');
-Route::get('/pharmacy', [ProductController::class, 'index'])->defaults('type', 'pharmacy')->name('pharmacy.index');
+Route::get('/services', [ProductController::class, 'index'])->defaults('section', 'services')->name('services.index');
+Route::get('/marketplace', [ProductController::class, 'index'])->defaults('section', 'marketplace')->name('marketplace.index');
+Route::get('/booking-rent', [ProductController::class, 'index'])->defaults('section', 'booking')->name('booking.index');
+Route::get('/contractors', [ProductController::class, 'index'])->defaults('section', 'contractors')->name('contractors.index');
+Route::get('/pharmacy', [ProductController::class, 'index'])->defaults('section', 'pharmacy')->name('pharmacy.index');
+Route::get('/hardware', [ProductController::class, 'index'])->defaults('store_category', 'hardware')->name('hardware.index');
+Route::get('/premises', [ProductController::class, 'index'])->defaults('store_category', 'premises')->name('premises.index');
+Route::get('/delivery', [ProductController::class, 'index'])->defaults('store_category', 'delivery')->name('delivery.index');
+Route::get('/mobility', [ProductController::class, 'index'])->defaults('store_category', 'mobility')->name('mobility.index');
+Route::get('/food-catering', [ProductController::class, 'index'])->defaults('store_category', 'food-catering')->name('food-catering.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 /*
@@ -142,6 +151,16 @@ Route::middleware(['auth', 'verify.vendor'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'validate.session'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['verify.admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/settings', [AdminSettingsController::class, 'edit'])->name('settings');
+        Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+    });
 
     /*
     |--------------------------------------------------------------------------

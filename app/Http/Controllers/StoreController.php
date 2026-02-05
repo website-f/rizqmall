@@ -8,6 +8,8 @@ use App\Services\SubscriptionService;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class StoreController extends Controller
@@ -38,7 +40,10 @@ class StoreController extends Controller
 
         // Check store quota
         $currentStoreCount = $user->stores()->count();
-        $baseQuota = session('stores_quota', 1); // From SSO login
+        $baseQuota = (int) session('stores_quota', 1); // From SSO login
+        if ($baseQuota < 1) {
+            $baseQuota = 1;
+        }
 
         // Calculate additional quota from purchases
         $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)
@@ -94,7 +99,7 @@ class StoreController extends Controller
             'phone' => $user->phone,
         ];
 
-        return view('store.setup', compact('category', 'prefill', 'user'));
+        return view('store.setup', compact('category', 'prefill', 'user', 'categoryId'));
     }
 
     /**
@@ -103,7 +108,7 @@ class StoreController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $storeCategoryId = session('selected_store_category');
+        $storeCategoryId = $request->input('store_category_id') ?? session('selected_store_category');
 
         if (!$user || !$user->is_vendor) {
             return redirect()->route('auth.redirect')
@@ -115,9 +120,16 @@ class StoreController extends Controller
                 ->with('error', 'Please start the setup process again.');
         }
 
+        if (!$request->filled('store_category_id')) {
+            $request->merge(['store_category_id' => $storeCategoryId]);
+        }
+
         // Check store quota (1 store per RizqMall subscription + purchased slots)
         $currentStoreCount = $user->stores()->count();
-        $baseQuota = session('stores_quota', 1); // Default 1 store per subscription
+        $baseQuota = (int) session('stores_quota', 1); // Default 1 store per subscription
+        if ($baseQuota < 1) {
+            $baseQuota = 1;
+        }
 
         // Calculate additional quota from purchases
         $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)
@@ -133,7 +145,8 @@ class StoreController extends Controller
         }
 
         // Validation
-        $request->validate([
+        $validated = $request->validate([
+            'store_category_id' => 'required|exists:store_categories,id',
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -158,6 +171,8 @@ class StoreController extends Controller
             'telegram_url' => 'nullable|url|max:255',
             'website_url' => 'nullable|url|max:255',
         ]);
+
+        $storeCategoryId = (int) $validated['store_category_id'];
 
         // Generate unique slug
         $slug = Str::slug($request->name);
@@ -211,36 +226,58 @@ class StoreController extends Controller
         }
 
         // Create Store
-        $store = Store::create([
-            'user_id' => $user->id,
-            'store_category_id' => $storeCategoryId,
-            'name' => $request->name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'slug' => $uniqueSlug,
-            'location' => $request->location,
-            'description' => $request->description,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'image' => $logoPath,
-            'banner' => $bannerPath,
-            'ssm_document' => $ssmDocPath,
-            'ic_document' => $icDocPath,
-            'business_registration_number' => $request->business_registration_number,
-            'business_registration_no' => $request->business_registration_no,
-            'tax_id' => $request->tax_id,
-            'status' => 'active',
-            'is_active' => true,
-            // Social Media
-            'facebook_url' => $request->facebook_url,
-            'instagram_url' => $request->instagram_url,
-            'twitter_url' => $request->twitter_url,
-            'tiktok_url' => $request->tiktok_url,
-            'youtube_url' => $request->youtube_url,
-            'whatsapp_number' => $request->whatsapp_number,
-            'telegram_url' => $request->telegram_url,
-            'website_url' => $request->website_url,
-        ]);
+        try {
+            $store = DB::transaction(function () use (
+                $user,
+                $storeCategoryId,
+                $uniqueSlug,
+                $logoPath,
+                $bannerPath,
+                $ssmDocPath,
+                $icDocPath,
+                $validated
+            ) {
+                return Store::create([
+                    'user_id' => $user->id,
+                    'store_category_id' => $storeCategoryId,
+                    'name' => $validated['name'],
+                    'phone' => $validated['phone'],
+                    'email' => $validated['email'],
+                    'slug' => $uniqueSlug,
+                    'location' => $validated['location'] ?? null,
+                    'description' => $validated['description'] ?? null,
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'image' => $logoPath,
+                    'banner' => $bannerPath,
+                    'ssm_document' => $ssmDocPath,
+                    'ic_document' => $icDocPath,
+                    'business_registration_number' => $validated['business_registration_number'] ?? null,
+                    'business_registration_no' => $validated['business_registration_no'] ?? null,
+                    'tax_id' => $validated['tax_id'] ?? null,
+                    'status' => 'active',
+                    'is_active' => true,
+                    // Social Media
+                    'facebook_url' => $validated['facebook_url'] ?? null,
+                    'instagram_url' => $validated['instagram_url'] ?? null,
+                    'twitter_url' => $validated['twitter_url'] ?? null,
+                    'tiktok_url' => $validated['tiktok_url'] ?? null,
+                    'youtube_url' => $validated['youtube_url'] ?? null,
+                    'whatsapp_number' => $validated['whatsapp_number'] ?? null,
+                    'telegram_url' => $validated['telegram_url'] ?? null,
+                    'website_url' => $validated['website_url'] ?? null,
+                ]);
+            });
+        } catch (\Exception $e) {
+            Log::error('Store creation failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create your store. Please try again.');
+        }
 
         // Clear session
         session()->forget('selected_store_category');
@@ -253,8 +290,6 @@ class StoreController extends Controller
         ]);
 
         // Get store category to determine redirect
-        $category = StoreCategory::find($storeCategoryId);
-
         // Redirect to add first product
         return redirect()->route('vendor.products.create')
             ->with('success', 'Store created successfully! Now add your first product.');

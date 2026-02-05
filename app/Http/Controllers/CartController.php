@@ -58,10 +58,29 @@ class CartController extends Controller
             $product = Product::findOrFail($request->product_id);
             $variant = $request->variant_id ? ProductVariant::findOrFail($request->variant_id) : null;
 
+            $requestedQuantity = (int) $request->quantity;
+            $quantity = $product->type === 'service' ? 1 : $requestedQuantity;
+
+            if ($product->type !== 'service') {
+                if ($product->allow_bulk_order && $product->minimum_order_quantity && $quantity < $product->minimum_order_quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Minimum order quantity is ' . $product->minimum_order_quantity . '.',
+                    ], 400);
+                }
+
+                if ($product->is_preorder && $product->preorder_limit && $quantity > $product->preorder_limit) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Preorder limit is ' . $product->preorder_limit . ' unit(s).',
+                    ], 400);
+                }
+            }
+
             // Check stock
             if ($product->type !== 'service') {
                 $availableStock = $variant ? $variant->stock_quantity : $product->stock_quantity;
-                if ($availableStock < $request->quantity) {
+                if ($availableStock < $quantity) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Insufficient stock available',
@@ -73,11 +92,20 @@ class CartController extends Controller
             $cart = $this->getCart();
 
             // Determine price
-            $price = $variant && $variant->sale_price
-                ? $variant->sale_price
-                : ($variant && $variant->price
-                    ? $variant->price
-                    : ($product->sale_price ?? $product->regular_price));
+            if ($product->type === 'service') {
+                $price = $product->booking_fee ?? $product->package_price ?? $product->sale_price ?? $product->regular_price;
+            } else {
+                if ($variant) {
+                    $price = $variant->sale_price ?? $variant->price ?? $product->sale_price ?? $product->regular_price;
+                } else {
+                    $price = $product->sale_price ?? $product->regular_price;
+                    if ($product->allow_bulk_order && $product->bulk_price && $product->bulk_quantity_threshold) {
+                        if ($quantity >= $product->bulk_quantity_threshold) {
+                            $price = $product->bulk_price;
+                        }
+                    }
+                }
+            }
 
             // Check if item already exists
             $cartItem = CartItem::where('cart_id', $cart->id)
@@ -87,7 +115,25 @@ class CartController extends Controller
 
             if ($cartItem) {
                 // Update quantity
-                $newQuantity = $cartItem->quantity + $request->quantity;
+                $newQuantity = $product->type === 'service'
+                    ? 1
+                    : ($cartItem->quantity + $quantity);
+
+                if ($product->type !== 'service') {
+                    if ($product->allow_bulk_order && $product->minimum_order_quantity && $newQuantity < $product->minimum_order_quantity) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Minimum order quantity is ' . $product->minimum_order_quantity . '.',
+                        ], 400);
+                    }
+
+                    if ($product->is_preorder && $product->preorder_limit && $newQuantity > $product->preorder_limit) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Preorder limit is ' . $product->preorder_limit . ' unit(s).',
+                        ], 400);
+                    }
+                }
 
                 // Check stock again
                 if ($product->type !== 'service') {
@@ -99,14 +145,27 @@ class CartController extends Controller
                     }
                 }
 
-                $cartItem->update(['quantity' => $newQuantity]);
+                if ($product->type === 'service') {
+                    $cartItem->update(['quantity' => 1, 'price' => $price]);
+                } else {
+                    $updatedPrice = $price;
+                    if (!$variant) {
+                        $updatedPrice = $product->sale_price ?? $product->regular_price;
+                        if ($product->allow_bulk_order && $product->bulk_price && $product->bulk_quantity_threshold) {
+                            if ($newQuantity >= $product->bulk_quantity_threshold) {
+                                $updatedPrice = $product->bulk_price;
+                            }
+                        }
+                    }
+                    $cartItem->update(['quantity' => $newQuantity, 'price' => $updatedPrice]);
+                }
             } else {
                 // Create new cart item
                 CartItem::create([
                     'cart_id' => $cart->id,
                     'product_id' => $product->id,
                     'variant_id' => $variant ? $variant->id : null,
-                    'quantity' => $request->quantity,
+                    'quantity' => $quantity,
                     'price' => $price,
                 ]);
             }
@@ -149,8 +208,26 @@ class CartController extends Controller
             ], 403);
         }
 
-        // Check stock
-        if ($cartItem->product->type !== 'service') {
+        // Service bookings are fixed to 1
+        if ($cartItem->product->type === 'service') {
+            $servicePrice = $cartItem->product->booking_fee ?? $cartItem->product->package_price ?? $cartItem->product->sale_price ?? $cartItem->product->regular_price;
+            $cartItem->update(['quantity' => 1, 'price' => $servicePrice]);
+        } else {
+            if ($cartItem->product->allow_bulk_order && $cartItem->product->minimum_order_quantity && $request->quantity < $cartItem->product->minimum_order_quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Minimum order quantity is ' . $cartItem->product->minimum_order_quantity . '.',
+                ], 400);
+            }
+
+            if ($cartItem->product->is_preorder && $cartItem->product->preorder_limit && $request->quantity > $cartItem->product->preorder_limit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Preorder limit is ' . $cartItem->product->preorder_limit . ' unit(s).',
+                ], 400);
+            }
+
+            // Check stock
             $availableStock = $cartItem->variant
                 ? $cartItem->variant->stock_quantity
                 : $cartItem->product->stock_quantity;
@@ -161,9 +238,21 @@ class CartController extends Controller
                     'message' => 'Insufficient stock. Available: ' . $availableStock,
                 ], 400);
             }
-        }
 
-        $cartItem->update(['quantity' => $request->quantity]);
+            $updatedPrice = $cartItem->price;
+            if ($cartItem->variant) {
+                $updatedPrice = $cartItem->variant->sale_price ?? $cartItem->variant->price ?? $cartItem->product->sale_price ?? $cartItem->product->regular_price;
+            } else {
+                $updatedPrice = $cartItem->product->sale_price ?? $cartItem->product->regular_price;
+                if ($cartItem->product->allow_bulk_order && $cartItem->product->bulk_price && $cartItem->product->bulk_quantity_threshold) {
+                    if ($request->quantity >= $cartItem->product->bulk_quantity_threshold) {
+                        $updatedPrice = $cartItem->product->bulk_price;
+                    }
+                }
+            }
+
+            $cartItem->update(['quantity' => $request->quantity, 'price' => $updatedPrice]);
+        }
 
         // Reload cart
         $cart->load('items');

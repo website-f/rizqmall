@@ -3,6 +3,25 @@
 @section('title', 'All Products - Rizqmall')
 
 @section('content')
+@php
+    $section = request('section', request()->route('section'));
+    $storeCategory = request('store_category', request()->route('store_category'));
+    $type = request('type');
+    $sectionLabels = [
+        'services' => 'Services',
+        'marketplace' => 'Marketplace',
+        'booking' => 'Booking & Rent',
+        'contractors' => 'Contractors',
+        'pharmacy' => 'Pharmacy',
+    ];
+    $typeLabels = [
+        'service' => 'Services',
+        'pharmacy' => 'Pharmacy',
+        'product' => 'Products',
+    ];
+    $activeLabel = $sectionLabels[$section] ?? ($typeLabels[$type] ?? ($storeCategory ? ucwords(str_replace('-', ' ', $storeCategory)) : 'Products'));
+    $filterRoute = request()->route() ? request()->route()->getName() : 'products.index';
+@endphp
 <style>
     /* Modern Filter Styles */
     .filter-sidebar {
@@ -595,17 +614,14 @@
         <nav class="mb-4" aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item active">
-                    @if (request('type'))
-                    {{ ucfirst(request('type')) }}s
-                    @elseif(request('category'))
-                    Products
-                    @else
-                    All Products
-                    @endif
-                </li>
+                <li class="breadcrumb-item active">{{ $activeLabel }}</li>
             </ol>
         </nav>
+
+        <div class="d-flex flex-column mb-3">
+            <h2 class="mb-1 fw-bold">{{ $activeLabel }}</h2>
+            <p class="text-muted mb-0">Browse items that match what you need.</p>
+        </div>
 
         <div class="row g-4">
             {{-- Filter Sidebar --}}
@@ -615,26 +631,52 @@
                         <h3 class="filter-title">
                             <i class="fas fa-sliders-h me-2"></i>Filters
                         </h3>
-                        <a href="{{ route('products.index') }}" class="clear-filters">
+                        <a href="{{ route($filterRoute, array_filter([
+                            'section' => $section,
+                            'store_category' => $storeCategory,
+                            'marketplace' => request('marketplace'),
+                            'type' => request('type'),
+                        ])) }}" class="clear-filters">
                             Clear All
                         </a>
                     </div>
 
                     {{-- Category Filter --}}
                     <div class="filter-section">
-                        <div class="filter-section-title">
-                            <i class="fas fa-folder text-primary"></i>
-                            Category
-                        </div>
-                        <form method="GET" action="{{ route('products.index') }}" id="filterForm">
+                    <div class="filter-section-title">
+                        <i class="fas fa-folder text-primary"></i>
+                        Category
+                    </div>
+                    <form method="GET" action="{{ route($filterRoute) }}" id="filterForm">
+                            <input type="hidden" name="section" value="{{ $section }}">
+                            <input type="hidden" name="store_category" value="{{ $storeCategory }}">
+                            <input type="hidden" name="marketplace" value="{{ request('marketplace') }}">
                             <input type="hidden" name="type" value="{{ request('type') }}">
                             <input type="hidden" name="search" value="{{ request('search') }}">
 
                             @php
-                            $categories = \App\Models\ProductCategory::where('is_active', true)
-                            ->whereNull('parent_id')
-                            ->orderBy('name')
-                            ->get();
+                            $categoryQuery = \App\Models\ProductCategory::where('is_active', true)
+                                ->whereNull('parent_id')
+                                ->orderBy('name');
+
+                            $categoryStoreSlug = $storeCategory;
+                            if (!$categoryStoreSlug && $section) {
+                                $sectionCategoryMap = [
+                                    'services' => 'services',
+                                    'contractors' => 'contractors',
+                                    'pharmacy' => 'pharmacy',
+                                ];
+                                $categoryStoreSlug = $sectionCategoryMap[$section] ?? null;
+                            }
+
+                            if ($categoryStoreSlug) {
+                                $storeCategoryModel = \App\Models\StoreCategory::where('slug', $categoryStoreSlug)->first();
+                                if ($storeCategoryModel) {
+                                    $categoryQuery->where('store_category_id', $storeCategoryModel->id);
+                                }
+                            }
+
+                            $categories = $categoryQuery->get();
                             @endphp
 
                             @foreach ($categories as $category)
@@ -651,11 +693,14 @@
 
                     {{-- Price Range --}}
                     <div class="filter-section">
-                        <div class="filter-section-title">
-                            <i class="fas fa-dollar-sign text-success"></i>
-                            Price Range
-                        </div>
-                        <form method="GET" action="{{ route('products.index') }}" id="priceForm">
+                    <div class="filter-section-title">
+                        <i class="fas fa-dollar-sign text-success"></i>
+                        Price Range
+                    </div>
+                    <form method="GET" action="{{ route($filterRoute) }}" id="priceForm">
+                            <input type="hidden" name="section" value="{{ $section }}">
+                            <input type="hidden" name="store_category" value="{{ $storeCategory }}">
+                            <input type="hidden" name="marketplace" value="{{ request('marketplace') }}">
                             <input type="hidden" name="type" value="{{ request('type') }}">
                             <input type="hidden" name="search" value="{{ request('search') }}">
 
@@ -677,7 +722,13 @@
                             Rating
                         </div>
                         @for ($i = 5; $i >= 1; $i--)
-                        <a href="{{ route('products.index', array_merge(request()->all(), ['rating' => $i])) }}"
+                        <a href="{{ route($filterRoute, array_filter(array_merge(request()->all(), [
+                                'section' => $section,
+                                'store_category' => $storeCategory,
+                                'marketplace' => request('marketplace'),
+                                'type' => request('type'),
+                                'rating' => $i,
+                            ]))) }}"
                             class="rating-filter text-decoration-none">
                             <input type="radio" name="rating" class="filter-checkbox"
                                 {{ request('rating') == $i ? 'checked' : '' }}>
@@ -722,8 +773,11 @@
                     </div>
 
                     <div class="products-controls">
-                        <form method="GET" action="{{ route('products.index') }}"
+                        <form method="GET" action="{{ route($filterRoute) }}"
                             class="d-flex align-items-center gap-3">
+                            <input type="hidden" name="section" value="{{ $section }}">
+                            <input type="hidden" name="store_category" value="{{ $storeCategory }}">
+                            <input type="hidden" name="marketplace" value="{{ request('marketplace') }}">
                             <input type="hidden" name="type" value="{{ request('type') }}">
                             <input type="hidden" name="search" value="{{ request('search') }}">
 
@@ -794,18 +848,24 @@
                             </a>
 
                             <div class="product-pricing mt-auto">
+                                @php
+                                    $displayPrice = $product->type === 'service'
+                                        ? ($product->booking_fee ?? $product->package_price ?? $product->sale_price ?? $product->regular_price)
+                                        : ($product->sale_price ?? $product->regular_price);
+                                    $showOldPrice = $product->type !== 'service' && $product->sale_price;
+                                @endphp
                                 <div class="product-price-row">
-                                    @if ($product->sale_price)
+                                    @if ($showOldPrice)
                                     <span class="product-discount me-1">
                                         {{ round((($product->regular_price - $product->sale_price) / $product->regular_price) * 100) }}% OFF
                                     </span>
                                     @endif
                                     <span class="product-price">
-                                        RM{{ number_format($product->sale_price ?? $product->regular_price, 2) }}
+                                        RM{{ number_format($displayPrice, 2) }}
                                     </span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
-                                    @if ($product->sale_price)
+                                    @if ($showOldPrice)
                                     <span class="product-old-price">
                                         RM{{ number_format($product->regular_price, 2) }}
                                     </span>
@@ -824,7 +884,12 @@
                         <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
                         <h4 class="text-muted">No products found</h4>
                         <p class="text-muted mb-4">Try adjusting your filters or search terms</p>
-                        <a href="{{ route('products.index') }}" class="btn btn-primary">
+                        <a href="{{ route($filterRoute, array_filter([
+                            'section' => $section,
+                            'store_category' => $storeCategory,
+                            'marketplace' => request('marketplace'),
+                            'type' => request('type'),
+                        ])) }}" class="btn btn-primary">
                             <i class="fas fa-redo me-2"></i>Clear Filters
                         </a>
                     </div>

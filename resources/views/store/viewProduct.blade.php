@@ -362,9 +362,34 @@
 
 <div class="product-detail-container">
     <nav class="mb-4" aria-label="breadcrumb">
+        @php
+            $breadcrumbRoute = 'products.index';
+            $breadcrumbLabel = ucfirst($product->type) . 's';
+            $storeCategorySlug = $product->store->category->slug ?? null;
+
+            if ($product->is_marketplace_product || $storeCategorySlug === 'marketplace') {
+                $breadcrumbRoute = 'marketplace.index';
+                $breadcrumbLabel = 'Marketplace';
+            } elseif (in_array($storeCategorySlug, ['accommodation', 'premises', 'mobility'], true)) {
+                $breadcrumbRoute = 'booking.index';
+                $breadcrumbLabel = 'Booking & Rent';
+            } elseif ($storeCategorySlug === 'contractors') {
+                $breadcrumbRoute = 'contractors.index';
+                $breadcrumbLabel = 'Contractors';
+            } elseif ($storeCategorySlug === 'hardware') {
+                $breadcrumbRoute = 'hardware.index';
+                $breadcrumbLabel = 'Hardware';
+            } elseif ($product->type === 'service') {
+                $breadcrumbRoute = 'services.index';
+                $breadcrumbLabel = 'Services';
+            } elseif ($product->type === 'pharmacy') {
+                $breadcrumbRoute = 'pharmacy.index';
+                $breadcrumbLabel = 'Pharmacy';
+            }
+        @endphp
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('products.index') }}">{{ ucfirst($product->type) }}s</a></li>
+            <li class="breadcrumb-item"><a href="{{ route($breadcrumbRoute) }}">{{ $breadcrumbLabel }}</a></li>
             @if ($product->category)
             <li class="breadcrumb-item"><a href="#">{{ $product->category->name }}</a></li>
             @endif
@@ -425,11 +450,21 @@
             <!-- Price Section -->
             <div class="price-section">
                 <div class="d-flex align-items-center flex-wrap">
-                    <span class="current-price" id="displayPrice">RM
-                        {{ number_format($product->on_sale ? $product->sale_price : $product->regular_price, 2) }}</span>
-                    @if ($product->on_sale)
-                    <span class="old-price">RM {{ number_format($product->regular_price, 2) }}</span>
-                    <span class="discount-badge">{{ $product->discount_percentage }}% OFF</span>
+                    @if ($product->type === 'service')
+                        @php
+                            $servicePrice = $product->booking_fee ?? $product->package_price ?? ($product->on_sale ? $product->sale_price : $product->regular_price);
+                            $serviceLabel = $product->booking_fee ? 'Booking Fee' : ($product->package_price ? 'Package Price' : 'Service Price');
+                        @endphp
+                        <div class="me-3 text-muted small">{{ $serviceLabel }}</div>
+                        <span class="current-price" id="displayPrice">RM
+                            {{ number_format($servicePrice, 2) }}</span>
+                    @else
+                        <span class="current-price" id="displayPrice">RM
+                            {{ number_format($product->on_sale ? $product->sale_price : $product->regular_price, 2) }}</span>
+                        @if ($product->on_sale)
+                        <span class="old-price">RM {{ number_format($product->regular_price, 2) }}</span>
+                        <span class="discount-badge">{{ $product->discount_percentage }}% OFF</span>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -568,6 +603,25 @@
                     <div class="col-12">
                         <strong>Service Hours:</strong> {{ $product->service_start_time }} -
                         {{ $product->service_end_time }}
+                    </div>
+                    @endif
+                    @if ($product->booking_fee || $product->package_price || $product->package_name || $product->package_details)
+                    <div class="col-12 mt-2">
+                        <strong>Booking & Package:</strong>
+                        <div class="text-muted mt-1">
+                            @if ($product->booking_fee)
+                                <div>Booking Fee: RM {{ number_format($product->booking_fee, 2) }}</div>
+                            @endif
+                            @if ($product->package_price)
+                                <div>Package Price: RM {{ number_format($product->package_price, 2) }}</div>
+                            @endif
+                            @if ($product->package_name)
+                                <div>Package Name: {{ $product->package_name }}</div>
+                            @endif
+                            @if ($product->package_details)
+                                <div class="mt-1">{{ $product->package_details }}</div>
+                            @endif
+                        </div>
                     </div>
                     @endif
                 </div>
@@ -720,7 +774,14 @@
                     @endif
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Shipping</td>
-                        <td style="padding: 16px 0; color: #1f2937;">Free shipping for orders above RM100</td>
+                        @php
+                            $shippingStandard = \App\Models\Setting::getFloat('shipping.standard', config('rizqmall.shipping.standard', 5.00));
+                            $shippingExpress = \App\Models\Setting::getFloat('shipping.express', config('rizqmall.shipping.express', 15.00));
+                        @endphp
+                        <td style="padding: 16px 0; color: #1f2937;">
+                            Standard from RM {{ number_format($shippingStandard, 2) }}; Express from RM
+                            {{ number_format($shippingExpress, 2) }}
+                        </td>
                     </tr>
                     <tr>
                         <td style="padding: 16px 0; font-weight: 700; width: 30%; color: #6b7280;">Delivery Time
@@ -926,8 +987,19 @@
         }
     }
 
-    function bookService() {
-        CartManager.showErrorModal('Service booking coming soon!');
+    async function bookService() {
+        const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
+        if (!productId) {
+            CartManager.showErrorModal('Service not found');
+            return;
+        }
+
+        const success = await CartManager.addToCart(productId, null, 1);
+        if (success) {
+            setTimeout(() => {
+                window.location.href = '/checkout';
+            }, 1200);
+        }
     }
 
     async function toggleWishlist(button) {

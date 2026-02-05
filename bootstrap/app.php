@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'verify.vendor' => \App\Http\Middleware\VerifyVendor::class,
             'verify.store.owner' => \App\Http\Middleware\VerifyStoreOwner::class,
             'validate.session' => \App\Http\Middleware\ValidateSession::class,
+            'verify.admin' => \App\Http\Middleware\VerifyAdmin::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

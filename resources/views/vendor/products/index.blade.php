@@ -1,13 +1,13 @@
 @extends('partials.admin')
 
-@section('title', 'My Products - RizqMall')
+@section('title', 'My {{ $store->product_term_plural ?? "Products" }} - RizqMall')
 
 @section('content')
     <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">My Products</h2>
+            <h2 class="mb-0">My {{ $store->product_term_plural ?? 'Products' }}</h2>
             <a href="{{ route('vendor.products.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add New Product
+                <i class="fas fa-plus me-2"></i>{{ $store->add_product_text ?? 'Add New Product' }}
             </a>
         </div>
 
@@ -82,7 +82,7 @@
                                             </a>
                                             <form action="{{ route('vendor.products.destroy', $product) }}" method="POST"
                                                 class="d-inline"
-                                                onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                                onsubmit="return confirm('Are you sure you want to delete this {{ strtolower($store->product_term ?? 'product') }}?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
@@ -97,9 +97,9 @@
                                     <td colspan="7" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="fas fa-box-open fa-3x mb-3"></i>
-                                            <p class="mb-2">No products found.</p>
+                                            <p class="mb-2">No {{ strtolower($store->product_term_plural ?? 'products') }} found.</p>
                                             <a href="{{ route('vendor.products.create') }}" class="btn btn-primary btn-sm">
-                                                Create Your First Product
+                                                Create Your First {{ $store->product_term ?? 'Product' }}
                                             </a>
                                         </div>
                                     </td>

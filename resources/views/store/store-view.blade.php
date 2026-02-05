@@ -1,5 +1,12 @@
 @extends('partials.app')
 
+@php
+    $productTerm = $store->product_term ?? 'Product';
+    $productTermPlural = $store->product_term_plural ?? 'Products';
+    $productTermLower = strtolower($productTerm);
+    $productTermPluralLower = strtolower($productTermPlural);
+@endphp
+
 @section('title', $store->name . ' - Store Profile')
 
 @section('content')
@@ -946,7 +953,7 @@
                         <a href="{{ route('products.create', ['store' => $store->id]) }}"
                             class="btn-action btn-primary-action">
                             <i class="fas fa-plus"></i>
-                            Add Product
+                            Add {{ $productTerm }}
                         </a>
                         <button class="btn-action btn-secondary-action" data-bs-toggle="modal"
                             data-bs-target="#changeBannerModal">
@@ -992,7 +999,7 @@
                     <div class="store-stats-grid">
                         <div class="store-stat-card">
                             <span class="store-stat-value">{{ $products->total() }}</span>
-                            <span class="store-stat-label">Products</span>
+                            <span class="store-stat-label">{{ $productTermPlural }}</span>
                         </div>
                         <div class="store-stat-card">
                             <span class="store-stat-value">{{ $store->followers()->count() }}</span>
@@ -1015,7 +1022,7 @@
             <div class="section-header">
                 <h2 class="section-title">
                     <i class="fas fa-box-open text-primary"></i>
-                    Store Products
+                    Store {{ $productTermPlural }}
                     <span class="products-count-badge">{{ $products->total() }}</span>
                 </h2>
             </div>
@@ -1098,12 +1105,12 @@
                             <div class="empty-icon">
                                 <i class="fas fa-box-open"></i>
                             </div>
-                            <h4 class="empty-title">No Products Yet</h4>
-                            <p class="empty-text">This store hasn't added any products yet.</p>
+                            <h4 class="empty-title">No {{ $productTermPlural }} Yet</h4>
+                            <p class="empty-text">This store hasn't added any {{ $productTermPluralLower }} yet.</p>
                             @if (session('auth_user_id') && session('auth_user_id') == $store->auth_user_id)
                             <a href="{{ route('products.create', ['store' => $store->id]) }}"
                                 class="btn-action btn-primary-action">
-                                <i class="fas fa-plus me-2"></i>Add Your First Product
+                                <i class="fas fa-plus me-2"></i>Add Your First {{ $productTerm }}
                             </a>
                             @endif
                         </div>

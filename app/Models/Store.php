@@ -125,4 +125,37 @@ class Store extends Model
     {
         return $this->members()->where('status', 'active')->count();
     }
+
+    /**
+     * Check if this is a food & catering store
+     */
+    public function isFoodCatering(): bool
+    {
+        return $this->category && $this->category->slug === 'food-catering';
+    }
+
+    /**
+     * Get the product terminology for this store
+     * Food & Catering uses "Packages & Services", others use "Products"
+     */
+    public function getProductTermAttribute(): string
+    {
+        return $this->isFoodCatering() ? 'Package' : 'Product';
+    }
+
+    /**
+     * Get the plural product terminology for this store
+     */
+    public function getProductTermPluralAttribute(): string
+    {
+        return $this->isFoodCatering() ? 'Packages & Services' : 'Products';
+    }
+
+    /**
+     * Get the add button text for this store
+     */
+    public function getAddProductTextAttribute(): string
+    {
+        return $this->isFoodCatering() ? 'Add New Package/Service' : 'Add New Product';
+    }
 }

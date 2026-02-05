@@ -28,7 +28,7 @@ class ProductController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $store = $user->stores()->first();
+        $store = $user->stores()->with('category')->first();
         if (!$store) {
             return redirect()->route('store.select-category')
                 ->with('error', 'Please set up your store first.');
@@ -124,6 +124,11 @@ class ProductController extends Controller
                 'service_days' => 'nullable|array',
                 'service_start_time' => 'nullable|date_format:H:i',
                 'service_end_time' => 'nullable|date_format:H:i|after:service_start_time',
+                // Booking & package fields (optional)
+                'booking_fee' => 'nullable|numeric|min:0',
+                'package_price' => 'nullable|numeric|min:0',
+                'package_name' => 'nullable|string|max:255',
+                'package_details' => 'nullable|string|max:1000',
             ]);
         } elseif ($request->type === 'pharmacy') {
             $rules = array_merge($rules, [
@@ -210,6 +215,10 @@ class ProductController extends Controller
                 $product->service_start_time = $validated['service_start_time'] ?? null;
                 $product->service_end_time = $validated['service_end_time'] ?? null;
                 $product->track_inventory = false; // Services don't track inventory
+                $product->booking_fee = $validated['booking_fee'] ?? null;
+                $product->package_price = $validated['package_price'] ?? null;
+                $product->package_name = $validated['package_name'] ?? null;
+                $product->package_details = $validated['package_details'] ?? null;
             } elseif ($validated['type'] === 'pharmacy') {
                 $product->requires_prescription = $request->has('requires_prescription');
                 $product->drug_code = $validated['drug_code'] ?? null;
@@ -374,7 +383,7 @@ class ProductController extends Controller
                 return redirect()->route('login');
             }
 
-            $store = $user->stores()->first();
+            $store = $user->stores()->with('category')->first();
             if (!$store) {
                 return redirect()->route('store.select-category');
             }
@@ -384,16 +393,94 @@ class ProductController extends Controller
                 ->latest()
                 ->paginate(10);
 
-            return view('vendor.products.index', compact('products'));
+            return view('vendor.products.index', compact('products', 'store'));
         }
 
         // Public: List published products
-        $query = Product::with(['images' => fn($q) => $q->where('is_primary', true), 'store'])
+        $query = Product::with(['images' => fn($q) => $q->where('is_primary', true), 'store.category'])
             ->where('status', 'published');
 
+        $section = $request->input('section', $request->route('section'));
+        $storeCategorySlug = $request->input('store_category', $request->route('store_category'));
+        $marketplaceOnly = (bool) $request->input('marketplace', false);
+        $defaultToProducts = false;
+
+        $sectionConfig = [
+            'services' => [
+                'type' => 'service',
+                'store_categories' => ['services'],
+            ],
+            'marketplace' => [
+                'marketplace' => true,
+            ],
+            'booking' => [
+                'store_categories' => ['accommodation', 'premises', 'mobility'],
+            ],
+            'contractors' => [
+                'type' => 'service',
+                'store_categories' => ['contractors'],
+            ],
+            'pharmacy' => [
+                'type' => 'pharmacy',
+                'store_categories' => ['pharmacy'],
+            ],
+        ];
+
+        $typeFilter = null;
+        $storeCategorySlugs = [];
+
+        if ($section && isset($sectionConfig[$section])) {
+            $config = $sectionConfig[$section];
+            if (!empty($config['type'])) {
+                $typeFilter = $config['type'];
+            }
+            if (!empty($config['store_categories'])) {
+                $storeCategorySlugs = array_merge($storeCategorySlugs, $config['store_categories']);
+            }
+            if (!empty($config['marketplace'])) {
+                $marketplaceOnly = true;
+            }
+        }
+
+        if ($storeCategorySlug) {
+            $storeCategorySlugs[] = $storeCategorySlug;
+        }
+
+        if (count($storeCategorySlugs) > 0) {
+            $storeCategorySlugs = array_values(array_unique($storeCategorySlugs));
+            $query->whereHas('store.category', function ($q) use ($storeCategorySlugs) {
+                $q->whereIn('slug', $storeCategorySlugs);
+            });
+        }
+
         // Filter by type
-        if ($request->has('type')) {
+        if ($typeFilter) {
+            $query->where('type', $typeFilter);
+        } elseif ($request->filled('type')) {
             $query->where('type', $request->type);
+        } elseif (!$section && !$storeCategorySlug) {
+            // Default products page should show physical goods only
+            $query->where('type', 'product');
+            $defaultToProducts = true;
+        }
+
+        // Marketplace filter
+        if ($marketplaceOnly) {
+            $query->where(function ($q) {
+                $q->where('allow_bulk_order', true)
+                    ->orWhere('is_preorder', true)
+                    ->orWhereHas('store.category', function ($storeQuery) {
+                        $storeQuery->where('slug', 'marketplace');
+                    });
+            });
+        } elseif ($defaultToProducts && empty($storeCategorySlugs)) {
+            // Keep marketplace-only items out of the default products page
+            $query->where(function ($q) {
+                $q->where('allow_bulk_order', false)
+                    ->where('is_preorder', false);
+            })->whereHas('store.category', function ($storeQuery) {
+                $storeQuery->where('slug', '!=', 'marketplace');
+            });
         }
 
         // Filter by category
@@ -401,9 +488,26 @@ class ProductController extends Controller
             $query->where('product_category_id', $request->category);
         }
 
+        if ($request->filled('categories')) {
+            $query->whereIn('product_category_id', $request->input('categories', []));
+        }
+
         // Search
         if ($request->has('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Price range
+        if ($request->filled('min_price')) {
+            $query->whereRaw('COALESCE(sale_price, regular_price) >= ?', [(float) $request->min_price]);
+        }
+        if ($request->filled('max_price')) {
+            $query->whereRaw('COALESCE(sale_price, regular_price) <= ?', [(float) $request->max_price]);
+        }
+
+        // Rating filter
+        if ($request->filled('rating')) {
+            $query->where('rating_average', '>=', (float) $request->rating);
         }
 
         // Sort
@@ -425,7 +529,7 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(12)->appends($request->except('page'));
 
         // Get user's wishlist product IDs
         $wishlistProductIds = [];
@@ -485,7 +589,7 @@ class ProductController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $store = $user->stores()->first();
+        $store = $user->stores()->with('category')->first();
         if (!$store) {
             return redirect()->route('store.select-category')
                 ->with('error', 'Please set up your store first.');
@@ -554,6 +658,10 @@ class ProductController extends Controller
         if ($product->type === 'service') {
             $rules['service_duration'] = 'nullable|integer|min:1';
             $rules['service_availability'] = 'nullable|in:instant,scheduled,both';
+            $rules['booking_fee'] = 'nullable|numeric|min:0';
+            $rules['package_price'] = 'nullable|numeric|min:0';
+            $rules['package_name'] = 'nullable|string|max:255';
+            $rules['package_details'] = 'nullable|string|max:1000';
         } elseif ($product->type === 'pharmacy') {
             $rules['requires_prescription'] = 'nullable|boolean';
             $rules['has_expiry'] = 'nullable|boolean';
@@ -596,6 +704,10 @@ class ProductController extends Controller
             if ($product->type === 'service') {
                 $product->service_duration = $validated['service_duration'] ?? null;
                 $product->service_availability = $validated['service_availability'] ?? 'instant';
+                $product->booking_fee = $validated['booking_fee'] ?? null;
+                $product->package_price = $validated['package_price'] ?? null;
+                $product->package_name = $validated['package_name'] ?? null;
+                $product->package_details = $validated['package_details'] ?? null;
             } elseif ($product->type === 'pharmacy') {
                 $product->requires_prescription = $validated['requires_prescription'] ?? false;
                 $product->has_expiry = $validated['has_expiry'] ?? false;

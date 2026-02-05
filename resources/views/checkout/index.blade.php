@@ -6,6 +6,14 @@
 <div class="container py-5">
     <h2 class="mb-4">Checkout</h2>
 
+    @php
+        $taxRateValue = $taxRate ?? \App\Models\Setting::getFloat('tax_rate', config('rizqmall.tax_rate', 0.06));
+        $shippingStandardValue = $shippingStandard ?? \App\Models\Setting::getFloat('shipping.standard', config('rizqmall.shipping.standard', 5.00));
+        $shippingExpressValue = $shippingExpress ?? \App\Models\Setting::getFloat('shipping.express', config('rizqmall.shipping.express', 15.00));
+        $shippingPickupValue = $shippingPickup ?? \App\Models\Setting::getFloat('shipping.pickup', config('rizqmall.shipping.pickup', 0.00));
+        $taxRatePercent = rtrim(rtrim(number_format($taxRateValue * 100, 2), '0'), '.');
+    @endphp
+
     @if (session('error'))
     <div class="alert alert-danger alert-dismissible fade show">
         <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
@@ -18,11 +26,13 @@
         <div class="row g-4">
             <!-- Checkout Form -->
             <div class="col-lg-8">
-                <!-- Delivery Address -->
+                <!-- Delivery / Service Address -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">1. Delivery Address</h5>
+                            <h5 class="mb-0">
+                                1. {{ ($hasPhysicalItems ?? false) ? 'Delivery Address' : 'Service Location (Optional)' }}
+                            </h5>
                             @auth
                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                 data-bs-target="#addressModal">
@@ -32,6 +42,12 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        @if (!($hasPhysicalItems ?? false))
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                If this service is performed at your location, add the address below.
+                            </div>
+                        @endif
                         @auth
                         @if (isset($addresses) && $addresses->count() > 0)
                         <div class="row g-3">
@@ -41,7 +57,7 @@
                                     class="form-check address-card p-3 border rounded {{ $address->is_default ? 'border-primary' : '' }}">
                                     <input class="form-check-input" type="radio" name="address_id"
                                         id="address{{ $address->id }}" value="{{ $address->id }}"
-                                        {{ $address->is_default ? 'checked' : '' }} required>
+                                        {{ $address->is_default ? 'checked' : '' }} {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                                     <label class="form-check-label w-100" for="address{{ $address->id }}">
                                         @if ($address->is_default)
                                         <span class="badge bg-primary mb-2">Default</span>
@@ -64,7 +80,7 @@
                         @else
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            Please add a delivery address to continue.
+                            {{ ($hasPhysicalItems ?? false) ? 'Please add a delivery address to continue.' : 'Add a service location if needed.' }}
                             <button type="button" class="btn btn-sm btn-warning ms-2" data-bs-toggle="modal"
                                 data-bs-target="#addressModal">
                                 Add Address
@@ -77,26 +93,26 @@
                             <div class="col-md-6">
                                 <label for="shipping_name" class="form-label">Full Name *</label>
                                 <input type="text" class="form-control" id="shipping_name" name="shipping_name"
-                                    required>
+                                    {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                             </div>
                             <div class="col-md-6">
                                 <label for="shipping_phone" class="form-label">Phone Number *</label>
                                 <input type="tel" class="form-control" id="shipping_phone" name="shipping_phone"
-                                    required>
+                                    {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                             </div>
                             <div class="col-12">
                                 <label for="shipping_address" class="form-label">Address *</label>
                                 <input type="text" class="form-control" id="shipping_address" name="shipping_address"
-                                    required>
+                                    {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                             </div>
                             <div class="col-md-4">
                                 <label for="shipping_city" class="form-label">City *</label>
                                 <input type="text" class="form-control" id="shipping_city" name="shipping_city"
-                                    required>
+                                    {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                             </div>
                             <div class="col-md-4">
                                 <label for="shipping_state" class="form-label">State *</label>
-                                <select class="form-select" id="shipping_state" name="shipping_state" required>
+                                <select class="form-select" id="shipping_state" name="shipping_state" {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                                     <option value="">Select State</option>
                                     <option value="Johor">Johor</option>
                                     <option value="Kedah">Kedah</option>
@@ -113,7 +129,7 @@
                             <div class="col-md-4">
                                 <label for="shipping_postal_code" class="form-label">Postal Code *</label>
                                 <input type="text" class="form-control" id="shipping_postal_code"
-                                    name="shipping_postal_code" required>
+                                    name="shipping_postal_code" {{ ($hasPhysicalItems ?? false) ? 'required' : '' }}>
                             </div>
                         </div>
                         @endauth
@@ -121,90 +137,124 @@
                 </div>
 
                 <!-- Shipping Method -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">2. Shipping Method</h5>
+                @if ($hasPhysicalItems ?? false)
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">2. Shipping Method</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="shipping_method" id="standard"
+                                    value="standard" data-fee="{{ $shippingStandardValue }}" checked>
+                                <label class="form-check-label w-100" for="standard">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>Standard Delivery</strong>
+                                            <p class="text-muted small mb-0">3-5 business days</p>
+                                        </div>
+                                        <strong>RM {{ number_format($shippingStandardValue, 2) }}</strong>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="shipping_method" id="express"
+                                    value="express" data-fee="{{ $shippingExpressValue }}">
+                                <label class="form-check-label w-100" for="express">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>Express Delivery</strong>
+                                            <p class="text-muted small mb-0">1-2 business days</p>
+                                        </div>
+                                        <strong>RM {{ number_format($shippingExpressValue, 2) }}</strong>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="form-check p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="shipping_method" id="pickup"
+                                    value="pickup" data-fee="{{ $shippingPickupValue }}">
+                                <label class="form-check-label w-100" for="pickup">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>Self Pickup</strong>
+                                            <p class="text-muted small mb-0">Pick up from store</p>
+                                        </div>
+                                        <strong class="text-success">
+                                            {{ $shippingPickupValue > 0 ? 'RM ' . number_format($shippingPickupValue, 2) : 'FREE' }}
+                                        </strong>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="form-check mb-3 p-3 border rounded">
-                            <input class="form-check-input" type="radio" name="shipping_method" id="standard"
-                                value="standard" checked>
-                            <label class="form-check-label w-100" for="standard">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <strong>Standard Delivery</strong>
-                                        <p class="text-muted small mb-0">3-5 business days</p>
-                                    </div>
-                                    <strong>RM 5.00</strong>
-                                </div>
-                            </label>
+                @else
+                    <input type="hidden" name="shipping_method" value="pickup">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">2. Booking Type</h5>
                         </div>
-                        <div class="form-check mb-3 p-3 border rounded">
-                            <input class="form-check-input" type="radio" name="shipping_method" id="express"
-                                value="express">
-                            <label class="form-check-label w-100" for="express">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <strong>Express Delivery</strong>
-                                        <p class="text-muted small mb-0">1-2 business days</p>
-                                    </div>
-                                    <strong>RM 15.00</strong>
-                                </div>
-                            </label>
-                        </div>
-                        <div class="form-check p-3 border rounded">
-                            <input class="form-check-input" type="radio" name="shipping_method" id="pickup"
-                                value="pickup">
-                            <label class="form-check-label w-100" for="pickup">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <strong>Self Pickup</strong>
-                                        <p class="text-muted small mb-0">Pick up from store</p>
-                                    </div>
-                                    <strong class="text-success">FREE</strong>
-                                </div>
-                            </label>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                No shipping required for service bookings.
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
 
-                <!-- Delivery/Pickup Schedule -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">3. Delivery/Pickup Schedule</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-3">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Select your preferred date and time for delivery or pickup
-                        </p>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="preferred_date" class="form-label">Preferred Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="preferred_date" name="preferred_date"
-                                    min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                                    max="{{ date('Y-m-d', strtotime('+30 days')) }}"
-                                    required>
-                                <small class="text-muted">Available dates: Tomorrow to 30 days from now</small>
+                <!-- Delivery/Pickup/Booking Schedule -->
+                @if ($requiresSchedule ?? false)
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">
+                                3. {{ ($hasPhysicalItems ?? false) ? 'Delivery/Pickup Schedule' : 'Booking Schedule' }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {{ ($hasPhysicalItems ?? false) ? 'Select your preferred date and time for delivery or pickup' : 'Select your preferred date and time for your booking' }}
+                            </p>
+                            @if (($hasMarketplaceItems ?? false) && (($maxLeadTimeDays ?? 0) > 0 || ($latestPreorderDate ?? null)))
+                                <div class="alert alert-warning mb-3">
+                                    <i class="fas fa-clock me-2"></i>
+                                    @if (($maxLeadTimeDays ?? 0) > 0)
+                                        Lead time up to {{ $maxLeadTimeDays }} day(s).
+                                    @endif
+                                    @if ($latestPreorderDate ?? null)
+                                        Preorder releases on {{ \Carbon\Carbon::parse($latestPreorderDate)->format('M d, Y') }}.
+                                    @endif
+                                </div>
+                            @endif
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="preferred_date" class="form-label">Preferred Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="preferred_date" name="preferred_date"
+                                        min="{{ $minScheduleDate->format('Y-m-d') }}"
+                                        max="{{ $maxScheduleDate->format('Y-m-d') }}"
+                                        required>
+                                    <small class="text-muted">Available dates: {{ $minScheduleDate->format('M d, Y') }} to {{ $maxScheduleDate->format('M d, Y') }}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="preferred_time" class="form-label">Preferred Time <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="preferred_time" name="preferred_time" required>
+                                        <option value="">Select Time Slot</option>
+                                        <option value="09:00-12:00">Morning (9:00 AM - 12:00 PM)</option>
+                                        <option value="12:00-15:00">Afternoon (12:00 PM - 3:00 PM)</option>
+                                        <option value="15:00-18:00">Evening (3:00 PM - 6:00 PM)</option>
+                                        <option value="18:00-21:00">Night (6:00 PM - 9:00 PM)</option>
+                                    </select>
+                                    <small class="text-muted">Choose a time slot that works for you</small>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="preferred_time" class="form-label">Preferred Time <span class="text-danger">*</span></label>
-                                <select class="form-select" id="preferred_time" name="preferred_time" required>
-                                    <option value="">Select Time Slot</option>
-                                    <option value="09:00-12:00">Morning (9:00 AM - 12:00 PM)</option>
-                                    <option value="12:00-15:00">Afternoon (12:00 PM - 3:00 PM)</option>
-                                    <option value="15:00-18:00">Evening (3:00 PM - 6:00 PM)</option>
-                                    <option value="18:00-21:00">Night (6:00 PM - 9:00 PM)</option>
-                                </select>
-                                <small class="text-muted">Choose a time slot that works for you</small>
+                            <div class="alert alert-info mt-3 mb-0" id="scheduleNote">
+                                <i class="fas fa-truck me-2"></i>
+                                <span id="scheduleNoteText">
+                                    {{ ($hasPhysicalItems ?? false) ? 'Your order will be delivered on your selected date and time.' : 'Your booking will be scheduled for the selected date and time.' }}
+                                </span>
                             </div>
                         </div>
-                        <div class="alert alert-info mt-3 mb-0" id="scheduleNote">
-                            <i class="fas fa-truck me-2"></i>
-                            <span id="scheduleNoteText">Your order will be delivered on your selected date and time.</span>
-                        </div>
                     </div>
-                </div>
+                @endif
 
                 <!-- Payment Method -->
                 <div class="card border-0 shadow-sm mb-4">
@@ -297,10 +347,24 @@
                                             alt="{{ $item->product->name ?? 'Product' }}"
                                             class="rounded me-2"
                                             style="width: 40px; height: 40px; object-fit: cover;">
-                                        <div class="small">
-                                            <div>{{ Str::limit($item->product->name ?? 'Product', 30) }}</div>
-                                            <div class="text-muted">Qty: {{ $item->quantity }}</div>
-                                        </div>
+                                            <div class="small">
+                                                <div>{{ Str::limit($item->product->name ?? 'Product', 30) }}</div>
+                                                <div class="text-muted">Qty: {{ $item->quantity }}</div>
+                                                @if (($item->product->type ?? null) === 'service')
+                                                    <div class="text-muted">Booking fee at checkout</div>
+                                                @endif
+                                                @if (($item->product->allow_bulk_order ?? false))
+                                                    @if (($item->product->minimum_order_quantity ?? 0) > 1)
+                                                        <div class="text-muted">Bulk min: {{ $item->product->minimum_order_quantity }}</div>
+                                                    @endif
+                                                    @if (($item->product->bulk_quantity_threshold ?? 0) > 0 && $item->product->bulk_price)
+                                                        <div class="text-muted">Bulk price: RM {{ number_format($item->product->bulk_price, 2) }} ({{ $item->product->bulk_quantity_threshold }}+)</div>
+                                                    @endif
+                                                @endif
+                                                @if (($item->product->is_preorder ?? false) && $item->product->preorder_release_date)
+                                                    <div class="text-muted">Preorder release: {{ \Carbon\Carbon::parse($item->product->preorder_release_date)->format('M d, Y') }}</div>
+                                                @endif
+                                            </div>
                                     </div>
                                     <span class="small fw-semibold">RM
                                         {{ number_format($item->price * $item->quantity, 2) }}</span>
@@ -313,20 +377,17 @@
                         <hr>
 
                         <!-- Price Breakdown -->
-                        @php
-                        $calculatedSubtotal = $cart->items->sum(function ($item) {
-                        return floatval($item->price ?? 0) * intval($item->quantity ?? 1);
-                        });
-                        $shippingFee = 5.00;
-                        $calculatedTotal = $calculatedSubtotal + $shippingFee;
-                        @endphp
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal</span>
-                            <span id="subtotal">RM {{ number_format($calculatedSubtotal, 2) }}</span>
+                            <span id="subtotal">RM {{ number_format($subtotal ?? 0, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Shipping</span>
-                            <span id="shipping-fee">RM 5.00</span>
+                            <span id="shipping-fee">{{ ($shipping ?? 0) > 0 ? 'RM ' . number_format($shipping, 2) : 'FREE' }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax ({{ $taxRatePercent }}%)</span>
+                            <span id="tax-amount" data-tax-rate="{{ $taxRateValue }}">RM {{ number_format($tax ?? 0, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2 text-success">
                             <span>Discount</span>
@@ -335,7 +396,7 @@
                         <hr>
                         <div class="d-flex justify-content-between fw-bold h5">
                             <span>Total</span>
-                            <span class="text-primary" id="total">RM {{ number_format($calculatedTotal, 2) }}</span>
+                            <span class="text-primary" id="total">RM {{ number_format($total ?? 0, 2) }}</span>
                         </div>
 
                         <!-- Terms -->
@@ -468,52 +529,79 @@
 @push('scripts')
 <script>
     // Update shipping fee and schedule note based on selected method
-    document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const shippingFee = document.getElementById('shipping-fee');
-            const total = document.getElementById('total');
-            const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace('RM ',
-                '').replace(',', ''));
-            const scheduleNote = document.getElementById('scheduleNote');
-            const scheduleNoteText = document.getElementById('scheduleNoteText');
+    const shippingRadios = document.querySelectorAll('input[name="shipping_method"]');
+    if (shippingRadios.length > 0) {
+        shippingRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const shippingFee = document.getElementById('shipping-fee');
+                const total = document.getElementById('total');
+                const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace('RM ',
+                    '').replace(/,/g, ''));
+                const taxElement = document.getElementById('tax-amount');
+                const taxRate = taxElement ? parseFloat(taxElement.dataset.taxRate || '0.06') : 0.06;
+                const scheduleNote = document.getElementById('scheduleNote');
+                const scheduleNoteText = document.getElementById('scheduleNoteText');
+                const scheduleNoteIcon = scheduleNote ? scheduleNote.querySelector('i') : null;
 
-            let fee = 0;
-            if (this.value === 'standard') {
-                fee = 5.00;
-                scheduleNote.className = 'alert alert-info mt-3 mb-0';
-                scheduleNote.querySelector('i').className = 'fas fa-truck me-2';
-                scheduleNoteText.textContent = 'Your order will be delivered on your selected date and time.';
-            }
-            if (this.value === 'express') {
-                fee = 15.00;
-                scheduleNote.className = 'alert alert-warning mt-3 mb-0';
-                scheduleNote.querySelector('i').className = 'fas fa-shipping-fast me-2';
-                scheduleNoteText.textContent = 'Express delivery! Your order will arrive on your selected date within the chosen time slot.';
-            }
-            if (this.value === 'pickup') {
-                fee = 0.00;
-                scheduleNote.className = 'alert alert-success mt-3 mb-0';
-                scheduleNote.querySelector('i').className = 'fas fa-store me-2';
-                scheduleNoteText.textContent = 'Self pickup selected. Please come to the store on your selected date during the chosen time slot.';
-            }
+                const updateScheduleNote = (noteClass, iconClass, text) => {
+                    if (!scheduleNote || !scheduleNoteText) {
+                        return;
+                    }
+                    scheduleNote.className = noteClass;
+                    if (scheduleNoteIcon) {
+                        scheduleNoteIcon.className = iconClass;
+                    }
+                    scheduleNoteText.textContent = text;
+                };
 
-            shippingFee.textContent = fee === 0 ? 'FREE' : 'RM ' + fee.toFixed(2);
-            total.textContent = 'RM ' + (subtotal + fee).toFixed(2);
+                let fee = parseFloat(this.dataset.fee || '0');
+                if (this.value === 'standard') {
+                    updateScheduleNote('alert alert-info mt-3 mb-0', 'fas fa-truck me-2', 'Your order will be delivered on your selected date and time.');
+                }
+                if (this.value === 'express') {
+                    updateScheduleNote('alert alert-warning mt-3 mb-0', 'fas fa-shipping-fast me-2', 'Express delivery! Your order will arrive on your selected date within the chosen time slot.');
+                }
+                if (this.value === 'pickup') {
+                    updateScheduleNote('alert alert-success mt-3 mb-0', 'fas fa-store me-2', 'Self pickup selected. Please come to the store on your selected date during the chosen time slot.');
+                }
+
+                shippingFee.textContent = fee === 0 ? 'FREE' : 'RM ' + fee.toFixed(2);
+                const tax = parseFloat((subtotal * taxRate).toFixed(2));
+                if (taxElement) {
+                    taxElement.textContent = 'RM ' + tax.toFixed(2);
+                }
+                total.textContent = 'RM ' + (subtotal + fee + tax).toFixed(2);
+            });
         });
-    });
+    } else {
+        const scheduleNote = document.getElementById('scheduleNote');
+        const scheduleNoteText = document.getElementById('scheduleNoteText');
+        if (scheduleNote && scheduleNoteText) {
+            const scheduleNoteIcon = scheduleNote.querySelector('i');
+            scheduleNote.className = 'alert alert-info mt-3 mb-0';
+            if (scheduleNoteIcon) {
+                scheduleNoteIcon.className = 'fas fa-calendar-check me-2';
+            }
+            scheduleNoteText.textContent = 'Your booking will be scheduled for the selected date and time.';
+        }
+    }
 
     // Set minimum date for preferred date (tomorrow)
     document.addEventListener('DOMContentLoaded', function() {
         const preferredDate = document.getElementById('preferred_date');
-        if (preferredDate) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            preferredDate.min = tomorrow.toISOString().split('T')[0];
-
-            const maxDate = new Date();
-            maxDate.setDate(maxDate.getDate() + 30);
-            preferredDate.max = maxDate.toISOString().split('T')[0];
+        if (!preferredDate) {
+            return;
         }
+        if (preferredDate.min || preferredDate.max) {
+            return;
+        }
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        preferredDate.min = tomorrow.toISOString().split('T')[0];
+
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + 30);
+        preferredDate.max = maxDate.toISOString().split('T')[0];
     });
 
     // Handle add address form submission

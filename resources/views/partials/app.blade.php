@@ -402,6 +402,59 @@
             }
         }
 
+        /* Category Strip */
+        .category-strip {
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .category-strip-inner {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+        }
+
+        .category-strip-inner::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .category-strip-inner::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 999px;
+        }
+
+        .category-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #374151;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .category-pill:hover {
+            border-color: #3b82f6;
+            color: #1d4ed8;
+            background: #eff6ff;
+        }
+
+        .category-pill.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35);
+        }
+
         /* Toaster Styles */
         .toast-container {
             position: fixed;
@@ -864,35 +917,73 @@
                         </div>
                     </div>
                 </div>
+                @php
+                    $activeSection = request('section');
+                    $activeStoreCategory = request('store_category');
+                @endphp
                 <ul class="navbar-nav justify-content-end align-items-center">
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link ps-0 active"
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link ps-0 {{ request()->is('/') ? 'active' : '' }}"
                             href="/">Home</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="/stores">Stores</a>
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link {{ request()->is('stores') ? 'active' : '' }}" href="/stores">Stores</a>
                     </li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link"
-                            href="/products">Products</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link"
-                            href="#">Services</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link"
-                            href="#">Wishlist</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Shipping
-                            Info</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link"
-                            href="https://rm.sandboxmalaysia.com/register/">Be a vendor</a></li>
-                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link" href="#">Track
-                            order</a></li>
-                    {{-- <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link pe-0" href="apps/e-commerce/landing/checkout.html">Checkout</a></li> --}}
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link {{ request()->is('products') && !$activeSection && !$activeStoreCategory ? 'active' : '' }}"
+                            href="{{ route('products.index') }}">Products</a></li>
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link {{ request()->is('services') ? 'active' : '' }}"
+                            href="{{ route('services.index') }}">Services</a></li>
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link {{ request()->is('marketplace') ? 'active' : '' }}"
+                            href="{{ route('marketplace.index') }}">Marketplace</a></li>
+                    <li class="nav-item" data-nav-item="data-nav-item"><a class="nav-link {{ request()->is('booking-rent') ? 'active' : '' }}"
+                            href="{{ route('booking.index') }}">Booking &amp; Rent</a></li>
                     <li class="nav-item dropdown" data-nav-item="data-nav-item" data-more-item="data-more-item"><a
                             class="nav-link dropdown-toggle dropdown-caret-none fw-bold pe-0"
                             href="javascript: void(0)" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                             aria-expanded="false" data-boundary="window" data-bs-reference="parent">
                             More<span class="fas fa-angle-down ms-2"></span></a>
-                        <div class="dropdown-menu dropdown-menu-end category-list" aria-labelledby="navbarDropdown"
-                            data-category-list="data-category-list"></div>
+                        <div class="dropdown-menu dropdown-menu-end shadow border mt-2" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{{ route('contractors.index') }}">Contractors</a>
+                            <a class="dropdown-item" href="{{ route('hardware.index') }}">Hardware</a>
+                            <a class="dropdown-item" href="{{ route('premises.index') }}">Premises</a>
+                            <a class="dropdown-item" href="{{ route('pharmacy.index') }}">Pharmacy</a>
+                            <a class="dropdown-item" href="{{ route('delivery.index') }}">Delivery</a>
+                            <a class="dropdown-item" href="{{ route('mobility.index') }}">Mobility</a>
+                            <a class="dropdown-item" href="{{ route('food-catering.index') }}">Food &amp; Catering</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ route('customer.wishlist') }}">Wishlist</a>
+                            <a class="dropdown-item" href="#">Track Order</a>
+                            <a class="dropdown-item" href="https://rm.sandboxmalaysia.com/register/">Be a Vendor</a>
+                        </div>
                     </li>
                 </ul>
             </div>
         </nav>
+        <div class="category-strip">
+            <div class="container-small">
+                <div class="category-strip-inner">
+                    <a class="category-pill {{ request()->is('products') && !$activeSection && !$activeStoreCategory ? 'active' : '' }}"
+                        href="{{ route('products.index') }}">All Products</a>
+                    <a class="category-pill {{ request()->is('services') ? 'active' : '' }}"
+                        href="{{ route('services.index') }}">Services</a>
+                    <a class="category-pill {{ request()->is('marketplace') ? 'active' : '' }}"
+                        href="{{ route('marketplace.index') }}">Marketplace</a>
+                    <a class="category-pill {{ request()->is('booking-rent') ? 'active' : '' }}"
+                        href="{{ route('booking.index') }}">Booking &amp; Rent</a>
+                    <a class="category-pill {{ request()->is('contractors') ? 'active' : '' }}"
+                        href="{{ route('contractors.index') }}">Contractors</a>
+                    <a class="category-pill {{ request()->is('hardware') ? 'active' : '' }}"
+                        href="{{ route('hardware.index') }}">Hardware</a>
+                    <a class="category-pill {{ request()->is('premises') ? 'active' : '' }}"
+                        href="{{ route('premises.index') }}">Premises</a>
+                    <a class="category-pill {{ request()->is('pharmacy') ? 'active' : '' }}"
+                        href="{{ route('pharmacy.index') }}">Pharmacy</a>
+                    <a class="category-pill {{ request()->is('delivery') ? 'active' : '' }}"
+                        href="{{ route('delivery.index') }}">Delivery</a>
+                    <a class="category-pill {{ request()->is('mobility') ? 'active' : '' }}"
+                        href="{{ route('mobility.index') }}">Mobility</a>
+                    <a class="category-pill {{ request()->is('food-catering') ? 'active' : '' }}"
+                        href="{{ route('food-catering.index') }}">Food &amp; Catering</a>
+                </div>
+            </div>
+        </div>
         <div class="ecommerce-homepage pt-5 mb-9">
 
             @yield('content')
@@ -1175,8 +1266,19 @@
             }
         }
 
-        function bookService() {
-            CartManager.showErrorModal('Service booking coming soon!');
+        async function bookService() {
+            const productId = parseInt(document.querySelector('[data-product-id]')?.dataset.productId);
+            if (!productId) {
+                CartManager.showErrorModal('Service not found');
+                return;
+            }
+
+            const success = await CartManager.addToCart(productId, null, 1);
+            if (success) {
+                setTimeout(() => {
+                    window.location.href = '/checkout';
+                }, 1200);
+            }
         }
     </script>
     @stack('scripts')

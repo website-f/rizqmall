@@ -372,7 +372,10 @@ class VendorDashboardController extends Controller
         $stores = $user->stores()->with('category')->get();
 
         // Base quota from subscription (stored in session)
-        $baseQuota = session('stores_quota', 1);
+        $baseQuota = (int) session('stores_quota', 1);
+        if ($baseQuota < 1) {
+            $baseQuota = 1;
+        }
 
         // Calculate additional quota from purchases
         $additionalSlots = \App\Models\StorePurchase::where('user_id', $user->id)

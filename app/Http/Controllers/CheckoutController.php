@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Setting;
 
 class CheckoutController extends Controller
 {
@@ -46,34 +47,121 @@ class CheckoutController extends Controller
                 ->with('error', 'Your cart is empty.');
         }
 
-        // Calculate totals
-        $subtotal = $cart->items->sum(function ($item) {
-            $price = $item->variant
-                ? ($item->variant->sale_price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price)
-                : ($item->product->sale_price ?? $item->product->regular_price);
-            return $price * $item->quantity;
+        // Determine cart composition
+        $hasServiceItems = $cart->items->contains(function ($item) {
+            return $item->product && $item->product->type === 'service';
+        });
+        $hasPhysicalItems = $cart->items->contains(function ($item) {
+            return $item->product && $item->product->type !== 'service';
+        });
+        $hasMarketplaceItems = $cart->items->contains(function ($item) {
+            $product = $item->product;
+            if (!$product) {
+                return false;
+            }
+            $storeCategory = $product->store?->category?->slug;
+            return $product->is_marketplace_product || $storeCategory === 'marketplace';
         });
 
-        $shipping = 0; // You can implement shipping calculation logic
-        $tax = $subtotal * 0.06; // 6% tax
+        $requiresSchedule = $hasServiceItems || $hasMarketplaceItems;
+
+        $maxLeadTimeDays = 0;
+        $latestPreorderDate = null;
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+            if (!$product) {
+                continue;
+            }
+            if ($product->lead_time_days && $product->lead_time_days > $maxLeadTimeDays) {
+                $maxLeadTimeDays = (int) $product->lead_time_days;
+            }
+            if ($product->is_preorder && $product->preorder_release_date) {
+                $releaseDate = \Carbon\Carbon::parse($product->preorder_release_date);
+                if (!$latestPreorderDate || $releaseDate->gt($latestPreorderDate)) {
+                    $latestPreorderDate = $releaseDate;
+                }
+            }
+        }
+
+        $baseMinDate = now()->addDay();
+        $leadTimeDate = $maxLeadTimeDays > 0 ? now()->addDays($maxLeadTimeDays) : null;
+        $minScheduleDate = $baseMinDate->copy();
+        if ($leadTimeDate && $leadTimeDate->gt($minScheduleDate)) {
+            $minScheduleDate = $leadTimeDate;
+        }
+        if ($latestPreorderDate && $latestPreorderDate->gt($minScheduleDate)) {
+            $minScheduleDate = $latestPreorderDate;
+        }
+
+        $maxScheduleDate = now()->addDays(90);
+        if ($minScheduleDate->gt($maxScheduleDate)) {
+            $maxScheduleDate = $minScheduleDate->copy()->addDays(30);
+        }
+
+        // Calculate totals
+        $subtotal = $cart->items->sum(function ($item) {
+            if (!$item->product) {
+                return 0;
+            }
+
+            $price = $item->price;
+            if ($price === null) {
+                if ($item->variant) {
+                    $price = $item->variant->sale_price ?? $item->variant->price ?? null;
+                }
+            }
+
+            if ($price === null) {
+                if ($item->product->type === 'service') {
+                    $price = $item->product->booking_fee
+                        ?? $item->product->package_price
+                        ?? $item->product->sale_price
+                        ?? $item->product->regular_price;
+                } else {
+                    $price = $item->product->sale_price ?? $item->product->regular_price;
+                }
+            }
+
+            return floatval($price ?? 0) * intval($item->quantity);
+        });
+
+        $taxRate = Setting::getFloat('tax_rate', config('rizqmall.tax_rate', 0.06));
+        $shippingStandard = Setting::getFloat('shipping.standard', config('rizqmall.shipping.standard', 5.00));
+        $shippingExpress = Setting::getFloat('shipping.express', config('rizqmall.shipping.express', 15.00));
+        $shippingPickup = Setting::getFloat('shipping.pickup', config('rizqmall.shipping.pickup', 0.00));
+
+        $shipping = $hasPhysicalItems ? $shippingStandard : $shippingPickup;
+        $tax = $subtotal * $taxRate;
         $total = $subtotal + $shipping + $tax;
 
         // Get user addresses
         $addresses = $user->addresses()->get();
 
-        return view('checkout.index', compact('cart', 'subtotal', 'shipping', 'tax', 'total', 'addresses'));
+        return view('checkout.index', compact(
+            'cart',
+            'subtotal',
+            'shipping',
+            'tax',
+            'total',
+            'addresses',
+            'hasServiceItems',
+            'hasPhysicalItems',
+            'hasMarketplaceItems',
+            'requiresSchedule',
+            'maxLeadTimeDays',
+            'latestPreorderDate',
+            'minScheduleDate',
+            'maxScheduleDate',
+            'taxRate',
+            'shippingStandard',
+            'shippingExpress',
+            'shippingPickup'
+        ));
     }
 
     public function process(Request $request)
     {
         $user = Auth::user();
-
-        // Validate schedule inputs
-        $request->validate([
-            'preferred_date' => 'required|date|after:today',
-            'preferred_time' => 'required|string',
-            'shipping_method' => 'required|in:standard,express,pickup',
-        ]);
 
         // Get cart through Cart model
         $cart = Cart::where('user_id', $user->id)
@@ -85,6 +173,73 @@ class CheckoutController extends Controller
         }
 
         $cartItems = $cart->items;
+        $hasServiceItems = $cartItems->contains(function ($item) {
+            return $item->product && $item->product->type === 'service';
+        });
+        $hasPhysicalItems = $cartItems->contains(function ($item) {
+            return $item->product && $item->product->type !== 'service';
+        });
+        $hasMarketplaceItems = $cartItems->contains(function ($item) {
+            $product = $item->product;
+            if (!$product) {
+                return false;
+            }
+            $storeCategory = $product->store?->category?->slug;
+            return $product->is_marketplace_product || $storeCategory === 'marketplace';
+        });
+
+        $requiresSchedule = $hasServiceItems || $hasMarketplaceItems;
+
+        $taxRate = Setting::getFloat('tax_rate', config('rizqmall.tax_rate', 0.06));
+        $shippingStandard = Setting::getFloat('shipping.standard', config('rizqmall.shipping.standard', 5.00));
+        $shippingExpress = Setting::getFloat('shipping.express', config('rizqmall.shipping.express', 15.00));
+        $shippingPickup = Setting::getFloat('shipping.pickup', config('rizqmall.shipping.pickup', 0.00));
+
+        $maxLeadTimeDays = 0;
+        $latestPreorderDate = null;
+        foreach ($cartItems as $item) {
+            $product = $item->product;
+            if (!$product) {
+                continue;
+            }
+            if ($product->lead_time_days && $product->lead_time_days > $maxLeadTimeDays) {
+                $maxLeadTimeDays = (int) $product->lead_time_days;
+            }
+            if ($product->is_preorder && $product->preorder_release_date) {
+                $releaseDate = \Carbon\Carbon::parse($product->preorder_release_date);
+                if (!$latestPreorderDate || $releaseDate->gt($latestPreorderDate)) {
+                    $latestPreorderDate = $releaseDate;
+                }
+            }
+        }
+
+        $baseMinDate = now()->addDay();
+        $leadTimeDate = $maxLeadTimeDays > 0 ? now()->addDays($maxLeadTimeDays) : null;
+        $minScheduleDate = $baseMinDate->copy();
+        if ($leadTimeDate && $leadTimeDate->gt($minScheduleDate)) {
+            $minScheduleDate = $leadTimeDate;
+        }
+        if ($latestPreorderDate && $latestPreorderDate->gt($minScheduleDate)) {
+            $minScheduleDate = $latestPreorderDate;
+        }
+
+        $maxScheduleDate = now()->addDays(90);
+        if ($minScheduleDate->gt($maxScheduleDate)) {
+            $maxScheduleDate = $minScheduleDate->copy()->addDays(30);
+        }
+
+        $rules = [];
+        if ($requiresSchedule) {
+            $rules['preferred_date'] = 'required|date|after_or_equal:' . $minScheduleDate->format('Y-m-d') . '|before_or_equal:' . $maxScheduleDate->format('Y-m-d');
+            $rules['preferred_time'] = 'required|string';
+        }
+        if ($hasPhysicalItems) {
+            $rules['shipping_method'] = 'required|in:standard,express,pickup';
+        } else {
+            $request->merge(['shipping_method' => 'pickup']);
+        }
+
+        $request->validate($rules);
 
         // Group items by store to create separate orders
         $itemsByStore = $cartItems->groupBy('product.store_id');
@@ -94,14 +249,28 @@ class CheckoutController extends Controller
         // Calculate delivery fee based on shipping method
         $deliveryFee = 0;
         $deliveryType = $request->shipping_method;
-        if ($deliveryType === 'standard') {
-            $deliveryFee = 5.00;
-        } elseif ($deliveryType === 'express') {
-            $deliveryFee = 15.00;
+        if ($hasPhysicalItems) {
+            if ($deliveryType === 'standard') {
+                $deliveryFee = $shippingStandard;
+            } elseif ($deliveryType === 'express') {
+                $deliveryFee = $shippingExpress;
+            } elseif ($deliveryType === 'pickup') {
+                $deliveryFee = $shippingPickup;
+            }
+        } else {
+            $deliveryType = 'pickup';
+            $deliveryFee = $shippingPickup;
         }
 
         // Store Logic: create orders
         foreach ($itemsByStore as $storeId => $items) {
+            $storeHasPhysicalItems = $items->contains(function ($item) {
+                return $item->product && $item->product->type !== 'service';
+            });
+
+            $storeDeliveryFee = $storeHasPhysicalItems ? $deliveryFee : 0;
+            $storeDeliveryType = $storeHasPhysicalItems ? $deliveryType : 'pickup';
+
             $storeSubtotal = $items->sum(function ($item) {
                 // Get price with fallbacks
                 $price = $item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0;
@@ -110,8 +279,8 @@ class CheckoutController extends Controller
 
             // Ensure subtotal is a valid number
             $storeSubtotal = floatval($storeSubtotal) ?: 0;
-            $tax = round($storeSubtotal * 0.06, 2);
-            $total = round($storeSubtotal + $tax + $deliveryFee, 2);
+            $tax = round($storeSubtotal * $taxRate, 2);
+            $total = round($storeSubtotal + $tax + $storeDeliveryFee, 2);
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -122,8 +291,8 @@ class CheckoutController extends Controller
                 'payment_method' => 'toyyibpay', // Now using VARCHAR after migration
                 'subtotal' => $storeSubtotal,
                 'tax' => $tax,
-                'delivery_fee' => $deliveryFee,
-                'delivery_type' => $deliveryType,
+                'delivery_fee' => $storeDeliveryFee,
+                'delivery_type' => $storeDeliveryType,
                 'total' => $total,
                 'shipping_address' => $user->default_address ? $user->default_address->toArray() : [],
                 'billing_address' => $user->default_address ? $user->default_address->toArray() : [],
@@ -137,7 +306,7 @@ class CheckoutController extends Controller
                 $itemPrice = floatval($item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0);
                 $quantity = intval($item->quantity);
                 $itemSubtotal = round($itemPrice * $quantity, 2);
-                $itemTax = round($itemSubtotal * 0.06, 2);
+                $itemTax = round($itemSubtotal * $taxRate, 2);
                 $itemTotal = round($itemSubtotal + $itemTax, 2);
 
                 // Get product image safely

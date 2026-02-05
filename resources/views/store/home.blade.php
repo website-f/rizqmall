@@ -17,9 +17,23 @@
                         <p class="nav-label">All Deals</p>
                     </a>
 
+                    @php
+                        $categoryRouteMap = [
+                            'marketplace' => 'marketplace.index',
+                            'services' => 'services.index',
+                            'pharmacy' => 'pharmacy.index',
+                            'premises' => 'premises.index',
+                            'hardware' => 'hardware.index',
+                            'delivery' => 'delivery.index',
+                            'contractors' => 'contractors.index',
+                            'accommodation' => 'booking.index',
+                            'mobility' => 'booking.index',
+                            'food-catering' => 'food-catering.index',
+                        ];
+                    @endphp
                     @foreach ($storeCategories as $category)
-                        @if (in_array($category->slug, ['marketplace', 'services', 'pharmacy', 'premises', 'hardware']))
-                            <a class="icon-nav-item" href="{{ route('products.index', ['type' => $category->slug]) }}">
+                        @if (isset($categoryRouteMap[$category->slug]))
+                            <a class="icon-nav-item" href="{{ route($categoryRouteMap[$category->slug]) }}">
                                 <div class="icon-container mb-2" data-bs-theme="light">
                                     <span class="fs-4 {{ $category->icon }}"></span>
                                 </div>
@@ -335,7 +349,7 @@
                                 <h3 class="mx-2 mb-0">Featured Services</h3>
                             </div>
                             <a class="btn btn-link btn-lg p-0 d-none d-md-block"
-                                href="{{ route('products.index', ['type' => 'service']) }}">
+                                href="{{ route('services.index') }}">
                                 View all<span class="fas fa-chevron-right fs-9 ms-1"></span>
                             </a>
                         </div>
@@ -354,8 +368,11 @@
                                                 <h6 class="mb-1 fs-9 text-body-emphasis line-clamp-2">{{ $service->name }}
                                                 </h6>
                                                 <p class="fs-10 text-body-tertiary mb-1">{{ $service->store->name }}</p>
+                                                @php
+                                                    $servicePrice = $service->booking_fee ?? $service->package_price ?? $service->regular_price;
+                                                @endphp
                                                 <p class="text-primary fw-bold mb-0">
-                                                    RM{{ number_format($service->regular_price, 2) }}</p>
+                                                    RM{{ number_format($servicePrice, 2) }}</p>
                                             </a>
                                         </div>
                                     </div>
@@ -379,7 +396,7 @@
                                 <h3 class="mx-2 mb-0">Pharmacy Products</h3>
                             </div>
                             <a class="btn btn-link btn-lg p-0 d-none d-md-block"
-                                href="{{ route('products.index', ['type' => 'pharmacy']) }}">
+                                href="{{ route('pharmacy.index') }}">
                                 View all<span class="fas fa-chevron-right fs-9 ms-1"></span>
                             </a>
                         </div>

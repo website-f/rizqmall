@@ -90,56 +90,69 @@
                             </p>
                             <hr class="navbar-vertical-line" />
                             <!-- parent pages-->
-                            <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.dashboard') }}" role="button" data-bs-toggle=""
-                                    aria-expanded="false">
-                                    <div class="d-flex align-items-center"><span class="nav-link-icon"><span
-                                                data-feather="pie-chart"></span></span><span
-                                            class="nav-link-text-wrapper"><span
-                                                class="nav-link-text">Dashboard</span></span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.my-stores') }}" role="button" data-bs-toggle=""
-                                    aria-expanded="false">
-                                    <div class="d-flex align-items-center"><span class="nav-link-icon"><span
-                                                data-feather="home"></span></span><span
-                                            class="nav-link-text-wrapper"><span class="nav-link-text">My
-                                                Stores</span></span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.products.index') }}" role="button" data-bs-toggle=""
-                                    aria-expanded="false">
-                                    <div class="d-flex align-items-center"><span class="nav-link-icon"><span
-                                                data-feather="grid"></span></span><span
-                                            class="nav-link-text-wrapper"><span
-                                                class="nav-link-text">Products</span></span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.orders.index') }}" role="button" data-bs-toggle=""
-                                    aria-expanded="false">
-                                    <div class="d-flex align-items-center"><span class="nav-link-icon"><span
-                                                data-feather="shopping-cart"></span></span><span
-                                            class="nav-link-text-wrapper"><span
-                                                class="nav-link-text">Orders</span></span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="nav-item-wrapper"><a class="nav-link label-1"
-                                    href="{{ route('vendor.analytics') }}" role="button" data-bs-toggle=""
-                                    aria-expanded="false">
-                                    <div class="d-flex align-items-center"><span class="nav-link-icon"><span
-                                                data-feather="bar-chart-2"></span></span><span
-                                            class="nav-link-text-wrapper"><span
-                                                class="nav-link-text">Analytics</span></span>
-                                    </div>
-                                </a>
-                            </div>
+                            @if (auth()->user()->user_type === 'admin')
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('admin.settings') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="settings"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Platform Settings</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                            @else
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.dashboard') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="pie-chart"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Dashboard</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.my-stores') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="home"></span></span><span
+                                                class="nav-link-text-wrapper"><span class="nav-link-text">My
+                                                    Stores</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.products.index') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="grid"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Products</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.orders.index') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="shopping-cart"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Orders</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.analytics') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="bar-chart-2"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Analytics</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                            @endif
                             <!-- parent pages-->
                             {{-- <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-faq" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-faq">
                     <div class="d-flex align-items-center">
@@ -432,7 +445,15 @@
                                 </div>
                                 <div class="overflow-auto scrollbar">
                                     <ul class="nav d-flex flex-column mb-2 pb-1">
-                                        @if (auth()->user()->user_type === 'vendor')
+                                        @if (auth()->user()->user_type === 'admin')
+                                            {{-- Admin Menu Items --}}
+                                            <li class="nav-item"><a class="nav-link px-3 d-block"
+                                                    href="{{ route('admin.settings') }}">
+                                                    <span class="me-2 text-body align-bottom"
+                                                        data-feather="settings"></span>
+                                                    Platform Settings</a>
+                                            </li>
+                                        @elseif (auth()->user()->user_type === 'vendor')
                                             {{-- Vendor Menu Items --}}
                                             <li class="nav-item"><a class="nav-link px-3 d-block"
                                                     href="{{ route('vendor.dashboard') }}">

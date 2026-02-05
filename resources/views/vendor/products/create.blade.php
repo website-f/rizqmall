@@ -1,6 +1,11 @@
 @extends('partials.admin')
 
-@section('title', 'Add New ' . ucfirst($type))
+@php
+    $displayTerm = $store->product_term ?? ucfirst($type);
+    $displayTermLower = strtolower($displayTerm);
+@endphp
+
+@section('title', 'Add New ' . $displayTerm)
 
 @section('content')
     <style>
@@ -198,7 +203,7 @@
         <nav class="mb-4" aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('vendor.dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Add {{ ucfirst($type) }}</li>
+                <li class="breadcrumb-item active">Add {{ $displayTerm }}</li>
             </ol>
         </nav>
 
@@ -232,7 +237,7 @@
             <!-- Header -->
             <div class="row g-3 mb-5">
                 <div class="col-auto">
-                    <h2 class="mb-2 fw-bold">Add New {{ ucfirst($type) }}</h2>
+                    <h2 class="mb-2 fw-bold">Add New {{ $displayTerm }}</h2>
                     <h5 class="text-body-tertiary">Store: <strong class="text-primary">{{ $store->name }}</strong></h5>
                 </div>
                 <div class="col-auto ms-auto">
@@ -240,7 +245,7 @@
                         <i class="fas fa-times me-1"></i> Cancel
                     </button>
                     <button class="btn btn-primary" type="submit">
-                        <i class="fas fa-check me-1"></i> Publish {{ ucfirst($type) }}
+                        <i class="fas fa-check me-1"></i> Publish {{ $displayTerm }}
                     </button>
                 </div>
             </div>
@@ -257,10 +262,10 @@
                             </h4>
 
                             <div class="mb-4">
-                                <label class="form-label">{{ ucfirst($type) }} Name <span
+                                <label class="form-label">{{ $displayTerm }} Name <span
                                         class="text-danger">*</span></label>
                                 <input class="form-control form-control-lg" type="text" name="name"
-                                    placeholder="e.g., {{ $type === 'product' ? 'Wireless Headphones' : ($type === 'service' ? 'House Cleaning Service' : 'Paracetamol 500mg') }}"
+                                    placeholder="e.g., {{ $store->isFoodCatering() ? 'Wedding Catering Package' : ($type === 'product' ? 'Wireless Headphones' : ($type === 'service' ? 'House Cleaning Service' : 'Paracetamol 500mg')) }}"
                                     value="{{ old('name') }}" required />
                             </div>
 
@@ -282,7 +287,7 @@
                     <div class="card">
                         <div class="card-body">
                             <h4 class="card-title mb-3">
-                                <i class="fas fa-images"></i> {{ ucfirst($type) }} Images
+                                <i class="fas fa-images"></i> {{ $displayTerm }} Images
                             </h4>
                             <p class="text-muted mb-4">Upload up to 10 images. First image will be the main image.</p>
 
@@ -308,7 +313,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <h4 class="card-title mb-4">
-                                    <i class="fas fa-layer-group"></i> {{ ucfirst($type) }} Type
+                                    <i class="fas fa-layer-group"></i> {{ $displayTerm }} Type
                                 </h4>
 
                                 <div class="product-type-toggle">
@@ -650,6 +655,37 @@
                                             value="{{ old('service_end_time', '18:00') }}" />
                                     </div>
                                 </div>
+
+                                <div class="border-top mt-4 pt-4">
+                                    <h5 class="mb-3">
+                                        <i class="fas fa-suitcase-rolling text-primary me-2"></i> Booking & Package
+                                        Details <span class="text-muted fs-6 fw-normal">(Optional)</span>
+                                    </h5>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Booking Fee (RM)</label>
+                                            <input class="form-control" type="number" step="0.01" name="booking_fee"
+                                                placeholder="100.00" value="{{ old('booking_fee') }}" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Package Price (RM)</label>
+                                            <input class="form-control" type="number" step="0.01" name="package_price"
+                                                placeholder="999.00" value="{{ old('package_price') }}" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Package Name</label>
+                                            <input class="form-control" type="text" name="package_name"
+                                                placeholder="e.g., 3D2N Island Escape" value="{{ old('package_name') }}" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label">Package Details</label>
+                                        <textarea class="form-control" name="package_details" rows="3"
+                                            placeholder="What is included in this package?">{{ old('package_details') }}</textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -784,7 +820,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Meta Title</label>
                                 <input class="form-control" type="text" name="meta_title"
-                                    placeholder="Leave blank to use {{ $type }} name"
+                                    placeholder="Leave blank to use {{ $displayTermLower }} name"
                                     value="{{ old('meta_title') }}" maxlength="255" />
                             </div>
                             <div>

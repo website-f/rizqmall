@@ -346,7 +346,7 @@
                                 </div>
 
                                 <div class="cart-item-details">
-                                    <a href="{{ route('products.index', $item->product->slug) }}" class="cart-item-name">
+                                    <a href="{{ route('product.show', $item->product->slug) }}" class="cart-item-name">
                                         {{ $item->product->name }}
                                     </a>
 
@@ -366,22 +366,46 @@
                                             {{ $item->product->store->name }}
                                         </a>
                                     </div>
+                                    @if ($item->product->type === 'service')
+                                        <div class="text-muted small mb-2">
+                                            <i class="fas fa-calendar-check me-1"></i>
+                                            Booking fee collected at checkout
+                                        </div>
+                                    @endif
+                                    @if ($item->product->allow_bulk_order || $item->product->is_preorder)
+                                        <div class="text-muted small mb-2">
+                                            <i class="fas fa-store me-1"></i>
+                                            @if ($item->product->allow_bulk_order && $item->product->minimum_order_quantity)
+                                                Min qty: {{ $item->product->minimum_order_quantity }}
+                                            @endif
+                                            @if ($item->product->is_preorder && $item->product->preorder_release_date)
+                                                <span class="ms-2">Preorder release: {{ \Carbon\Carbon::parse($item->product->preorder_release_date)->format('M d, Y') }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
 
                                     <div class="cart-item-price">
                                         RM <span class="line-total">{{ number_format($item->line_total, 2) }}</span>
                                     </div>
 
                                     <div class="cart-item-actions">
-                                        <div class="cart-qty-control">
-                                            <button class="cart-qty-btn" onclick="updateCartQty({{ $item->id }}, -1)">
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                            <span class="cart-qty-value"
-                                                id="qty-{{ $item->id }}">{{ $item->quantity }}</span>
-                                            <button class="cart-qty-btn" onclick="updateCartQty({{ $item->id }}, 1)">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        @if ($item->product->type === 'service')
+                                            <div class="cart-qty-control">
+                                                <span class="cart-qty-value" id="qty-{{ $item->id }}">1</span>
+                                            </div>
+                                            <span class="text-muted small">Booking scheduled at checkout</span>
+                                        @else
+                                            <div class="cart-qty-control">
+                                                <button class="cart-qty-btn" onclick="updateCartQty({{ $item->id }}, -1)">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <span class="cart-qty-value"
+                                                    id="qty-{{ $item->id }}">{{ $item->quantity }}</span>
+                                                <button class="cart-qty-btn" onclick="updateCartQty({{ $item->id }}, 1)">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        @endif
 
                                         <button class="cart-remove-btn" onclick="removeCartItem({{ $item->id }})">
                                             <i class="fas fa-trash-alt me-1"></i> Remove
@@ -410,24 +434,11 @@
                         </div>
 
                         <div class="summary-row">
-                            <span>Tax (6%):</span>
-                            <span class="fw-bold" id="summary-tax">RM {{ number_format($cart->tax, 2) }}</span>
+                            <span>Taxes &amp; Shipping:</span>
+                            <span class="text-success">Calculated at checkout</span>
                         </div>
-
-                        <div class="summary-row">
-                            <span>Shipping:</span>
-                            <span class="fw-bold" id="summary-shipping">
-                                @if ($cart->shipping > 0)
-                                    RM {{ number_format($cart->shipping, 2) }}
-                                @else
-                                    <span class="text-success">FREE</span>
-                                @endif
-                            </span>
-                        </div>
-
-                        <div class="summary-row total">
-                            <span>Total:</span>
-                            <span id="summary-total">RM {{ number_format($cart->grand_total, 2) }}</span>
+                        <div class="text-muted small mb-2">
+                            Final shipping and tax are shown at checkout based on your address and order type.
                         </div>
 
                         <button class="checkout-btn" onclick="window.location.href='/checkout'">
@@ -543,16 +554,6 @@
         // Update summary section
         function updateSummary(data) {
             document.getElementById('summary-subtotal').textContent = `RM ${data.subtotal}`;
-            document.getElementById('summary-tax').textContent = `RM ${data.tax}`;
-
-            const shippingElement = document.getElementById('summary-shipping');
-            if (parseFloat(data.shipping) > 0) {
-                shippingElement.innerHTML = `RM ${data.shipping}`;
-            } else {
-                shippingElement.innerHTML = '<span class="text-success">FREE</span>';
-            }
-
-            document.getElementById('summary-total').textContent = `RM ${data.grand_total}`;
 
             const headerCount = document.querySelector('.cart-header p');
             if (headerCount) {

@@ -1,5 +1,12 @@
 @extends('partials.admin')
 
+@php
+    $productTerm = $store->product_term ?? 'Product';
+    $productTermPlural = $store->product_term_plural ?? 'Products';
+    $productTermLower = strtolower($productTerm);
+    $productTermPluralLower = strtolower($productTermPlural);
+@endphp
+
 @section('title', 'Vendor Dashboard - RizqMall')
 
 @section('content')
@@ -32,7 +39,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted mb-1 small">Total Products</p>
+                            <p class="text-muted mb-1 small">Total {{ $productTermPlural }}</p>
                             <h3 class="mb-0">{{ $stats['total_products'] }}</h3>
                             <small class="text-success">{{ $stats['active_products'] }} active</small>
                         </div>
@@ -122,10 +129,10 @@
                     <i class="fas fa-info-circle fa-2x me-3"></i>
                     <div class="flex-grow-1">
                         <h5 class="alert-heading mb-1">Get Started!</h5>
-                        <p class="mb-2">You haven't added any products yet. Start by adding your first product to
+                        <p class="mb-2">You haven't added any {{ $productTermPluralLower }} yet. Start by adding your first {{ $productTermLower }} to
                             your store.</p>
                         <a href="{{ route('vendor.products.create') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>Add Your First Product
+                            <i class="fas fa-plus me-2"></i>Add Your First {{ $productTerm }}
                         </a>
                     </div>
                 </div>
@@ -196,7 +203,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0">Top Selling Products</h5>
+                    <h5 class="mb-0">Top Selling {{ $productTermPlural }}</h5>
                 </div>
                 <div class="card-body p-0">
                     @if ($topProducts->count() > 0)
@@ -220,9 +227,9 @@
                     @else
                     <div class="text-center py-5">
                         <i class="fas fa-box fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No products yet</p>
+                        <p class="text-muted">No {{ $productTermPluralLower }} yet</p>
                         <a href="{{ route('vendor.products.create') }}" class="btn btn-primary btn-sm">
-                            Add Product
+                            Add {{ $productTerm }}
                         </a>
                     </div>
                     @endif

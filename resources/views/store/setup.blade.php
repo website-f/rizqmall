@@ -222,9 +222,17 @@
                 <i class="fas fa-exclamation-triangle me-2"></i> {{ session('error') }}
             </div>
         @endif
+        
+        @if ($errors->any())
+            <div class="alert alert-danger border-0 mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Please fix the highlighted fields and try again.
+            </div>
+        @endif
 
         <form action="{{ route('store.store') }}" method="POST">
             @csrf
+            <input type="hidden" name="store_category_id" value="{{ old('store_category_id', $categoryId ?? $category->id) }}">
 
             <!-- Basic Information -->
             <div class="card">

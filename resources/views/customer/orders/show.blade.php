@@ -197,6 +197,23 @@
                     </div>
                 </div>
 
+                @if ($order->preferred_date || $order->preferred_time)
+                <!-- Booking / Delivery Schedule -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0">Schedule</h5>
+                    </div>
+                    <div class="card-body">
+                        @if ($order->preferred_date)
+                            <p class="mb-1"><strong>Date:</strong> {{ \Carbon\Carbon::parse($order->preferred_date)->format('M d, Y') }}</p>
+                        @endif
+                        @if ($order->preferred_time)
+                            <p class="mb-0"><strong>Time:</strong> {{ $order->preferred_time }}</p>
+                        @endif
+                    </div>
+                </div>
+                @endif
+
                 <!-- Delivery Address -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom">
