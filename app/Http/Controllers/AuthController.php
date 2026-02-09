@@ -50,6 +50,20 @@ class AuthController extends Controller
             }
 
             // Step 2: Create or update local user
+            $existingUser = User::where('subscription_user_id', $userData['id'])->first();
+            $isAdmin = (bool) ($userData['is_admin'] ?? false);
+            $incomingType = $userData['user_type'] ?? 'customer';
+            $resolvedType = $incomingType;
+
+            // If admin logs in but already has vendor access, keep vendor type
+            if ($isAdmin && $incomingType === 'admin' && $existingUser) {
+                if ($existingUser->user_type === 'vendor') {
+                    $resolvedType = 'vendor';
+                } elseif (Store::where('user_id', $existingUser->id)->exists()) {
+                    $resolvedType = 'vendor';
+                }
+            }
+
             $user = User::updateOrCreate(
                 ['subscription_user_id' => $userData['id']],
                 [
@@ -57,7 +71,8 @@ class AuthController extends Controller
                     'email' => $userData['email'],
                     'phone' => $userData['phone'] ?? null,
                     'avatar' => $userData['avatar'] ?? null,
-                    'user_type' => $userData['user_type'],
+                    'user_type' => $resolvedType,
+                    'is_admin' => $isAdmin,
                     'auth_type' => 'sso',
                     'is_active' => true,
                     'email_verified' => true,
@@ -192,6 +207,12 @@ class AuthController extends Controller
      */
     private function redirectAfterLogin(User $user)
     {
+        // Admins
+        if ($user->user_type === 'admin') {
+            return redirect()->route('admin.settings')
+                ->with('success', 'Welcome back, ' . $user->name . '!');
+        }
+
         // Vendors
         if ($user->user_type === 'vendor') {
             // Check if vendor has a store

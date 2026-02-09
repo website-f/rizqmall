@@ -18,6 +18,7 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type',
+        'is_admin',
         'phone',
         'avatar',
         'is_active',
@@ -52,6 +53,7 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'email_verified' => 'boolean',
         'is_active' => 'boolean',
+        'is_admin' => 'boolean',
         'password' => 'hashed', // Laravel 11 auto-hashing
     ];
 
@@ -154,7 +156,7 @@ class User extends Authenticatable
 
     public function getIsAdminAttribute()
     {
-        return $this->user_type === 'admin';
+        return (bool) ($this->attributes['is_admin'] ?? false) || $this->user_type === 'admin';
     }
 
     public function getIsSsoAttribute()

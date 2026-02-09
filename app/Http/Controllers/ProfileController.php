@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Address;
+use App\Services\SandboxApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,20 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
-        return view('customer.profile', compact('user'));
+        $walletBalance = null;
+        $walletError = null;
+
+        if ($user && $user->subscription_user_id) {
+            $sandbox = app(SandboxApiService::class);
+            $walletResponse = $sandbox->getWalletBalance($user->subscription_user_id);
+            if ($walletResponse && ($walletResponse['success'] ?? false)) {
+                $walletBalance = (int) ($walletResponse['balance'] ?? 0);
+            } else {
+                $walletError = $walletResponse['message'] ?? null;
+            }
+        }
+
+        return view('customer.profile', compact('user', 'walletBalance', 'walletError'));
     }
 
     /**

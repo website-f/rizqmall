@@ -135,6 +135,45 @@
                     </div>
                 </div>
 
+                <!-- Rizq Wallet -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0">Rizq Wallet</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!is_null($walletBalance ?? null))
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <p class="text-muted mb-1">Available Balance</p>
+                                    <h4 class="mb-0 text-primary">
+                                        RM {{ number_format(($walletBalance ?? 0) / 100, 2) }}
+                                    </h4>
+                                </div>
+                                <a class="btn btn-primary"
+                                    href="{{ rtrim(config('services.sandbox.url'), '/') }}/wallet"
+                                    target="_blank">
+                                    <i class="fas fa-wallet me-2"></i>Manage Wallet
+                                </a>
+                            </div>
+                        @else
+                            <p class="text-muted mb-2">
+                                Your Rizq Wallet is powered by Sandbox. Use it for fast checkout in RizqMall.
+                            </p>
+                            @if (!empty($walletError ?? null))
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    Wallet unavailable. Please try again later.
+                                </div>
+                            @endif
+                            <a class="btn btn-outline-primary"
+                                href="{{ rtrim(config('services.sandbox.url'), '/') }}/wallet"
+                                target="_blank">
+                                <i class="fas fa-plus-circle me-2"></i>Top Up in Sandbox
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
                 <!-- Change Password -->
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">

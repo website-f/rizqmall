@@ -11,6 +11,7 @@ class VerifyVendor
 {
     /**
      * Handle an incoming request.
+     * Allows both vendors and admins to access vendor areas.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -21,8 +22,11 @@ class VerifyVendor
                 ->with('error', 'Please login to continue.');
         }
 
-        // Check if user is a vendor
-        if ($user->user_type !== 'vendor') {
+        // Allow vendors and admins to access vendor areas
+        $isVendor = $user->user_type === 'vendor';
+        $isAdmin = $user->is_admin || $user->user_type === 'admin';
+
+        if (!$isVendor && !$isAdmin) {
             return redirect()->route('rizqmall.home')
                 ->with('error', 'This area is for vendors only.');
         }

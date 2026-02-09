@@ -374,4 +374,66 @@ class SandboxApiService
             return 0;
         }
     }
+
+    /**
+     * Get wallet balance from Sandbox
+     */
+    public function getWalletBalance(int $subscriptionUserId)
+    {
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->get($this->baseUrl . "/api/rizqmall/wallet/{$subscriptionUserId}");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::warning('Failed to fetch wallet balance from Sandbox', [
+                'user_id' => $subscriptionUserId,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error fetching wallet balance from Sandbox', [
+                'user_id' => $subscriptionUserId,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Debit wallet in Sandbox (RizqMall order payment)
+     */
+    public function debitWallet(int $subscriptionUserId, int $amount, string $reference, string $description)
+    {
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->post($this->baseUrl . "/api/rizqmall/wallet/{$subscriptionUserId}/debit", [
+                    'amount' => $amount,
+                    'reference' => $reference,
+                    'description' => $description,
+                ]);
+
+            return $response->json();
+        } catch (\Exception $e) {
+            Log::error('Error debiting wallet in Sandbox', [
+                'user_id' => $subscriptionUserId,
+                'error' => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'message' => 'Wallet service unavailable',
+            ];
+        }
+    }
 }

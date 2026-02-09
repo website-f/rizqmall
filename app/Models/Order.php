@@ -119,6 +119,73 @@ class Order extends Model
         ]));
     }
 
+    // Shipping address field accessors
+    public function getShippingNameAttribute()
+    {
+        return $this->shipping_address['full_name'] ?? $this->shipping_address['name'] ?? 'N/A';
+    }
+
+    public function getShippingPhoneAttribute()
+    {
+        return $this->shipping_address['phone'] ?? 'N/A';
+    }
+
+    public function getShippingAddressLineAttribute()
+    {
+        $addr = $this->shipping_address;
+        if (!$addr) return 'N/A';
+
+        $lines = array_filter([
+            $addr['address_line_1'] ?? $addr['address'] ?? '',
+            $addr['address_line_2'] ?? '',
+        ]);
+
+        return implode(', ', $lines) ?: 'N/A';
+    }
+
+    public function getShippingCityAttribute()
+    {
+        return $this->shipping_address['city'] ?? 'N/A';
+    }
+
+    public function getShippingStateAttribute()
+    {
+        return $this->shipping_address['state'] ?? 'N/A';
+    }
+
+    public function getShippingPostalCodeAttribute()
+    {
+        return $this->shipping_address['postal_code'] ?? '';
+    }
+
+    public function getShippingCountryAttribute()
+    {
+        return $this->shipping_address['country'] ?? 'Malaysia';
+    }
+
+    // Payment method display accessor
+    public function getPaymentMethodDisplayAttribute()
+    {
+        $methods = [
+            'ewallet' => 'Rizq Wallet',
+            'rizq_wallet' => 'Rizq Wallet',
+            'fpx' => 'FPX Online Banking',
+            'toyyibpay' => 'ToyyibPay',
+            'online_banking' => 'Online Banking',
+            'credit_card' => 'Credit Card',
+            'cod' => 'Cash on Delivery',
+            'bank_transfer' => 'Bank Transfer',
+        ];
+
+        return $methods[$this->payment_method] ?? ucfirst(str_replace('_', ' ', $this->payment_method ?? 'cod'));
+    }
+
+    // Status color accessor
+    public function getStatusColorAttribute()
+    {
+        return $this->status_badge;
+    }
+
     // Methods
     public static function generateOrderNumber()
     {

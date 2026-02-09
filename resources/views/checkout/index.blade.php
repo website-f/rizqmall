@@ -12,6 +12,14 @@
         $shippingExpressValue = $shippingExpress ?? \App\Models\Setting::getFloat('shipping.express', config('rizqmall.shipping.express', 15.00));
         $shippingPickupValue = $shippingPickup ?? \App\Models\Setting::getFloat('shipping.pickup', config('rizqmall.shipping.pickup', 0.00));
         $taxRatePercent = rtrim(rtrim(number_format($taxRateValue * 100, 2), '0'), '.');
+        $walletBalanceValue = $walletBalance ?? null;
+        $walletTotalCents = isset($total) ? (int) round($total * 100) : null;
+        $walletShortfall = null;
+        $walletInsufficient = false;
+        if (!is_null($walletBalanceValue) && !is_null($walletTotalCents) && $walletBalanceValue < $walletTotalCents) {
+            $walletInsufficient = true;
+            $walletShortfall = $walletTotalCents - $walletBalanceValue;
+        }
     @endphp
 
     @if (session('error'))
@@ -295,8 +303,40 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-wallet fa-2x text-primary me-3"></i>
                                     <div>
-                                        <strong>E-Wallet</strong>
-                                        <p class="text-muted small mb-0">Touch 'n Go, GrabPay, Boost</p>
+                                        <strong>Rizq Wallet</strong>
+                                        <p class="text-muted small mb-1">Pay using your Sandbox e-wallet balance</p>
+                                        @if (!is_null($walletBalance))
+                                            <p class="small mb-0 text-success">
+                                                Balance: RM {{ number_format($walletBalance / 100, 2) }}
+                                            </p>
+                                            @if ($walletInsufficient)
+                                                <p class="small mb-0 text-danger">
+                                                    Insufficient balance. Need RM {{ number_format(($walletShortfall ?? 0) / 100, 2) }} more.
+                                                </p>
+                                            @endif
+                                        @elseif (!empty($walletError))
+                                            <p class="small mb-0 text-warning">
+                                                Wallet unavailable. Try again later.
+                                            </p>
+                                        @else
+                                            <p class="small mb-0 text-muted">
+                                                No wallet linked yet. <a class="text-decoration-none"
+                                                    href="{{ rtrim(config('services.sandbox.url'), '/') }}/wallet" target="_blank">Top up in Sandbox</a>
+                                            </p>
+                                        @endif
+                                        @if (is_null($walletBalanceValue) || $walletInsufficient)
+                                            <a class="btn btn-sm btn-outline-primary mt-2"
+                                                href="{{ rtrim(config('services.sandbox.url'), '/') }}/wallet"
+                                                target="_blank" rel="noopener">
+                                                <i class="fas fa-plus-circle me-1"></i>Top up wallet
+                                            </a>
+                                        @else
+                                            <a class="btn btn-sm btn-outline-secondary mt-2"
+                                                href="{{ rtrim(config('services.sandbox.url'), '/') }}/wallet"
+                                                target="_blank" rel="noopener">
+                                                <i class="fas fa-wallet me-1"></i>Manage wallet
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
                             </label>

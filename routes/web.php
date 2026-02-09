@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController; // Class name in ProfileDashboardCon
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\VendorMemberController;
 use App\Http\Controllers\AdminSettingsController;
+use App\Http\Controllers\AdminProductImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -160,6 +161,8 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
     Route::middleware(['verify.admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/settings', [AdminSettingsController::class, 'edit'])->name('settings');
         Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+        Route::get('/products/import', [AdminProductImportController::class, 'show'])->name('products.import');
+        Route::post('/products/import', [AdminProductImportController::class, 'import'])->name('products.import.store');
     });
 
     /*

@@ -152,8 +152,8 @@
                             <span>RM {{ number_format($order->subtotal, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Shipping</span>
-                            <span>RM {{ number_format($order->shipping_fee ?? 0, 2) }}</span>
+                            <span>Delivery Fee</span>
+                            <span>RM {{ number_format($order->delivery_fee ?? 0, 2) }}</span>
                         </div>
                         @if ($order->discount > 0)
                             <div class="d-flex justify-content-between mb-2 text-success">
@@ -217,34 +217,94 @@
                 <!-- Delivery Address -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">Delivery Address</h5>
+                        <h5 class="mb-0">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>Delivery Address
+                        </h5>
                     </div>
                     <div class="card-body">
+                        @if($order->shipping_address)
                         <p class="mb-1"><strong>{{ $order->shipping_name }}</strong></p>
-                        <p class="mb-1">{{ $order->shipping_phone }}</p>
+                        <p class="mb-1">
+                            <i class="fas fa-phone text-muted me-1"></i>{{ $order->shipping_phone }}
+                        </p>
                         <p class="mb-0 text-muted small">
-                            {{ $order->shipping_address }}<br>
+                            {{ $order->shipping_address_line }}<br>
                             {{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_postal_code }}
                         </p>
+                        @else
+                        <p class="text-muted mb-0">No delivery address specified</p>
+                        @endif
                     </div>
                 </div>
 
                 <!-- Payment Information -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">Payment Information</h5>
+                        <h5 class="mb-0">
+                            <i class="fas fa-credit-card me-2 text-primary"></i>Payment Information
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Payment Method</span>
-                            <span class="fw-semibold">{{ ucfirst($order->payment_method ?? 'COD') }}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Payment Method</span>
+                            <div class="d-flex align-items-center">
+                                @if($order->payment_method === 'ewallet')
+                                <span class="badge bg-success px-3 py-2">
+                                    <i class="fas fa-wallet me-1"></i>Rizq Wallet
+                                </span>
+                                @elseif($order->payment_method === 'fpx' || $order->payment_method === 'online_banking')
+                                <span class="badge bg-info px-3 py-2">
+                                    <i class="fas fa-university me-1"></i>FPX Online Banking
+                                </span>
+                                @elseif($order->payment_method === 'toyyibpay')
+                                <span class="badge bg-primary px-3 py-2">
+                                    <i class="fas fa-credit-card me-1"></i>ToyyibPay
+                                </span>
+                                @elseif($order->payment_method === 'credit_card')
+                                <span class="badge bg-info px-3 py-2">
+                                    <i class="fas fa-credit-card me-1"></i>Credit Card
+                                </span>
+                                @elseif($order->payment_method === 'cod')
+                                <span class="badge bg-secondary px-3 py-2">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Cash on Delivery
+                                </span>
+                                @else
+                                <span class="badge bg-secondary px-3 py-2">
+                                    <i class="fas fa-credit-card me-1"></i>{{ $order->payment_method_display }}
+                                </span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Payment Status</span>
-                            <span class="badge bg-{{ $order->payment_status == 'paid' ? 'success' : 'warning' }}">
-                                {{ ucfirst($order->payment_status ?? 'pending') }}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Payment Status</span>
+                            @if($order->payment_status === 'paid')
+                            <span class="badge bg-success px-3 py-2">
+                                <i class="fas fa-check-circle me-1"></i>Paid
                             </span>
+                            @elseif($order->payment_status === 'pending')
+                            <span class="badge bg-warning text-dark px-3 py-2">
+                                <i class="fas fa-clock me-1"></i>Pending
+                            </span>
+                            @elseif($order->payment_status === 'failed')
+                            <span class="badge bg-danger px-3 py-2">
+                                <i class="fas fa-times-circle me-1"></i>Failed
+                            </span>
+                            @elseif($order->payment_status === 'refunded')
+                            <span class="badge bg-info px-3 py-2">
+                                <i class="fas fa-undo me-1"></i>Refunded
+                            </span>
+                            @else
+                            <span class="badge bg-secondary px-3 py-2">
+                                {{ ucfirst($order->payment_status ?? 'Unknown') }}
+                            </span>
+                            @endif
                         </div>
+                        @if($order->payment_reference)
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Reference No.</span>
+                            <span class="font-monospace small">{{ $order->payment_reference }}</span>
+                        </div>
+                        @endif
                     </div>
                 </div>
 

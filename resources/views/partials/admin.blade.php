@@ -90,7 +90,8 @@
                             </p>
                             <hr class="navbar-vertical-line" />
                             <!-- parent pages-->
-                            @if (auth()->user()->user_type === 'admin')
+                            {{-- Admin-specific options --}}
+                            @if (auth()->user()->is_admin || auth()->user()->user_type === 'admin')
                                 <div class="nav-item-wrapper"><a class="nav-link label-1"
                                         href="{{ route('admin.settings') }}" role="button" data-bs-toggle=""
                                         aria-expanded="false">
@@ -101,7 +102,19 @@
                                         </div>
                                     </a>
                                 </div>
-                            @else
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('admin.products.import') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="upload"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Product Import</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                            @endif
+                            {{-- Vendor options (for vendors OR admins) --}}
+                            @if (auth()->user()->user_type === 'vendor' || auth()->user()->is_admin || auth()->user()->user_type === 'admin')
                                 <div class="nav-item-wrapper"><a class="nav-link label-1"
                                         href="{{ route('vendor.dashboard') }}" role="button" data-bs-toggle=""
                                         aria-expanded="false">
@@ -445,16 +458,17 @@
                                 </div>
                                 <div class="overflow-auto scrollbar">
                                     <ul class="nav d-flex flex-column mb-2 pb-1">
-                                        @if (auth()->user()->user_type === 'admin')
-                                            {{-- Admin Menu Items --}}
+                                        {{-- Admin-specific options --}}
+                                        @if (auth()->user()->is_admin || auth()->user()->user_type === 'admin')
                                             <li class="nav-item"><a class="nav-link px-3 d-block"
                                                     href="{{ route('admin.settings') }}">
                                                     <span class="me-2 text-body align-bottom"
                                                         data-feather="settings"></span>
                                                     Platform Settings</a>
                                             </li>
-                                        @elseif (auth()->user()->user_type === 'vendor')
-                                            {{-- Vendor Menu Items --}}
+                                        @endif
+                                        {{-- Vendor options (for vendors OR admins) --}}
+                                        @if (auth()->user()->user_type === 'vendor' || auth()->user()->is_admin || auth()->user()->user_type === 'admin')
                                             <li class="nav-item"><a class="nav-link px-3 d-block"
                                                     href="{{ route('vendor.dashboard') }}">
                                                     <span class="me-2 text-body align-bottom"

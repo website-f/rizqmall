@@ -18,7 +18,7 @@ class VerifyAdmin
                 ->with('error', 'Please login to continue.');
         }
 
-        if ($user->user_type !== 'admin') {
+        if (!$user->is_admin && $user->user_type !== 'admin') {
             return redirect()->route('rizqmall.home')
                 ->with('error', 'This area is for administrators only.');
         }

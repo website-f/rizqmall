@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\SandboxApiService;
 use App\Models\Setting;
 
 class CheckoutController extends Controller
@@ -137,6 +139,19 @@ class CheckoutController extends Controller
         // Get user addresses
         $addresses = $user->addresses()->get();
 
+        // Wallet balance (Sandbox)
+        $walletBalance = null;
+        $walletError = null;
+        if ($user->subscription_user_id) {
+            $sandbox = app(SandboxApiService::class);
+            $walletResponse = $sandbox->getWalletBalance($user->subscription_user_id);
+            if ($walletResponse && ($walletResponse['success'] ?? false)) {
+                $walletBalance = (int) ($walletResponse['balance'] ?? 0);
+            } else {
+                $walletError = $walletResponse['message'] ?? null;
+            }
+        }
+
         return view('checkout.index', compact(
             'cart',
             'subtotal',
@@ -155,7 +170,9 @@ class CheckoutController extends Controller
             'taxRate',
             'shippingStandard',
             'shippingExpress',
-            'shippingPickup'
+            'shippingPickup',
+            'walletBalance',
+            'walletError'
         ));
     }
 
@@ -229,6 +246,7 @@ class CheckoutController extends Controller
         }
 
         $rules = [];
+        $rules['payment_method'] = 'required|in:online_banking,credit_card,ewallet,cod';
         if ($requiresSchedule) {
             $rules['preferred_date'] = 'required|date|after_or_equal:' . $minScheduleDate->format('Y-m-d') . '|before_or_equal:' . $maxScheduleDate->format('Y-m-d');
             $rules['preferred_time'] = 'required|string';
@@ -240,6 +258,142 @@ class CheckoutController extends Controller
         }
 
         $request->validate($rules);
+
+        $paymentMethod = $request->input('payment_method');
+        if ($paymentMethod === 'ewallet') {
+            if (!$user->subscription_user_id) {
+                return back()->with('error', 'E-wallet is not linked to your account. Please top up in Sandbox first.');
+            }
+
+            $itemsByStore = $cartItems->groupBy('product.store_id');
+            $orders = [];
+            $totalAmount = 0;
+
+            $deliveryFee = 0;
+            $deliveryType = $request->shipping_method;
+            if ($hasPhysicalItems) {
+                if ($deliveryType === 'standard') {
+                    $deliveryFee = $shippingStandard;
+                } elseif ($deliveryType === 'express') {
+                    $deliveryFee = $shippingExpress;
+                } elseif ($deliveryType === 'pickup') {
+                    $deliveryFee = $shippingPickup;
+                }
+            } else {
+                $deliveryType = 'pickup';
+                $deliveryFee = $shippingPickup;
+            }
+
+            DB::beginTransaction();
+            try {
+                foreach ($itemsByStore as $storeId => $items) {
+                    $storeHasPhysicalItems = $items->contains(function ($item) {
+                        return $item->product && $item->product->type !== 'service';
+                    });
+
+                    $storeDeliveryFee = $storeHasPhysicalItems ? $deliveryFee : 0;
+                    $storeDeliveryType = $storeHasPhysicalItems ? $deliveryType : 'pickup';
+
+                    $storeSubtotal = $items->sum(function ($item) {
+                        $price = $item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0;
+                        return floatval($price) * intval($item->quantity);
+                    });
+
+                    $storeSubtotal = floatval($storeSubtotal) ?: 0;
+                    $tax = round($storeSubtotal * $taxRate, 2);
+                    $total = round($storeSubtotal + $tax + $storeDeliveryFee, 2);
+
+                    $order = Order::create([
+                        'order_number' => Order::generateOrderNumber(),
+                        'user_id' => $user->id,
+                        'store_id' => $storeId,
+                        'status' => 'confirmed',
+                        'payment_status' => 'paid',
+                        'payment_method' => 'ewallet',
+                        'subtotal' => $storeSubtotal,
+                        'tax' => $tax,
+                        'delivery_fee' => $storeDeliveryFee,
+                        'delivery_type' => $storeDeliveryType,
+                        'total' => $total,
+                        'shipping_address' => $user->default_address ? $user->default_address->toArray() : [],
+                        'billing_address' => $user->default_address ? $user->default_address->toArray() : [],
+                        'preferred_date' => $request->preferred_date,
+                        'preferred_time' => $request->preferred_time,
+                        'customer_notes' => $request->notes,
+                        'paid_at' => now(),
+                    ]);
+
+                    foreach ($items as $item) {
+                        $itemPrice = floatval($item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0);
+                        $quantity = intval($item->quantity);
+                        $itemSubtotal = round($itemPrice * $quantity, 2);
+                        $itemTax = round($itemSubtotal * $taxRate, 2);
+                        $itemTotal = round($itemSubtotal + $itemTax, 2);
+
+                        $productImage = null;
+                        if ($item->product && $item->product->images && $item->product->images->isNotEmpty()) {
+                            $firstImage = $item->product->images->first();
+                            $productImage = $firstImage->url ?? ($firstImage->path ? asset('storage/' . $firstImage->path) : null);
+                        }
+
+                        OrderItem::create([
+                            'order_id' => $order->id,
+                            'product_id' => $item->product_id,
+                            'variant_id' => $item->variant_id,
+                            'product_name' => $item->product->name ?? 'Unknown Product',
+                            'variant_name' => $item->variant->name ?? null,
+                            'sku' => $item->variant->sku ?? $item->product->sku ?? null,
+                            'product_image' => $productImage,
+                            'quantity' => $quantity,
+                            'price' => $itemPrice,
+                            'subtotal' => $itemSubtotal,
+                            'tax' => $itemTax,
+                            'total' => $itemTotal,
+                        ]);
+                    }
+
+                    $orders[] = $order;
+                    $totalAmount += $order->total;
+                }
+
+                $amountInCents = (int) round($totalAmount * 100);
+                $orderRefs = implode(',', array_map(function ($order) {
+                    return $order->order_number;
+                }, $orders));
+
+                $sandboxService = app(SandboxApiService::class);
+                $walletResponse = $sandboxService->debitWallet(
+                    $user->subscription_user_id,
+                    $amountInCents,
+                    'RIZQMALL-' . $orders[0]->order_number,
+                    'RizqMall order: ' . $orderRefs
+                );
+
+                if (!($walletResponse['success'] ?? false)) {
+                    throw new \Exception($walletResponse['message'] ?? 'Wallet payment failed.');
+                }
+
+                $walletReference = !empty($walletResponse['transaction_id'])
+                    ? 'WALLET-' . $walletResponse['transaction_id']
+                    : 'RIZQMALL-' . $orders[0]->order_number;
+
+                foreach ($orders as $order) {
+                    $order->update(['payment_reference' => $walletReference]);
+                }
+
+                $this->decrementStockForOrders($orders);
+                $cart->items()->delete();
+
+                DB::commit();
+
+                return redirect()->route('checkout.success', ['order' => $orders[0]->id])
+                    ->with('success', 'Payment successful! Your order has been placed.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                return back()->with('error', 'Wallet payment failed: ' . $e->getMessage());
+            }
+        }
 
         // Group items by store to create separate orders
         $itemsByStore = $cartItems->groupBy('product.store_id');
