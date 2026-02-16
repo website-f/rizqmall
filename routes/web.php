@@ -163,6 +163,7 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
         Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
         Route::get('/products/import', [AdminProductImportController::class, 'show'])->name('products.import');
         Route::post('/products/import', [AdminProductImportController::class, 'import'])->name('products.import.store');
+        Route::post('/products/remove', [AdminProductImportController::class, 'removeProducts'])->name('products.remove');
     });
 
     /*
