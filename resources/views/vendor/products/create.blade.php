@@ -233,6 +233,7 @@
             id="productForm">
             @csrf
             <input type="hidden" name="type" value="{{ $type }}">
+            <input type="hidden" id="categorySlug" value="{{ $categorySlug ?? 'default' }}">
 
             <!-- Header -->
             <div class="row g-3 mb-5">
@@ -397,8 +398,8 @@
                         </div>
                     </div>
 
-                    <!-- Marketplace Options (Bulk & Preorder) -->
-                    @if ($type === 'product')
+                    <!-- Marketplace Options (Bulk & Preorder) - Only for marketplace category -->
+                    @if ($type === 'product' && ($categorySlug ?? 'default') === 'marketplace')
                     <div class="card">
                         <div class="card-body">
                             <h4 class="card-title mb-4">
@@ -442,6 +443,27 @@
                                         <input class="form-control" type="number" name="lead_time_days"
                                             placeholder="7" value="{{ old('lead_time_days') }}" />
                                         <small class="text-muted">Days needed to prepare bulk orders</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quote Request Section -->
+                            <div class="border rounded p-3 mb-4">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="allowQuoteRequest"
+                                        name="allow_quote_request" value="1" {{ old('allow_quote_request') ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="allowQuoteRequest">
+                                        <i class="fas fa-file-invoice text-info me-2"></i> Allow "Request Quote" for Large Orders
+                                    </label>
+                                    <div class="form-text">Let buyers request custom pricing for very large orders</div>
+                                </div>
+
+                                <div class="row g-3 quote-request-fields" style="{{ old('allow_quote_request') ? '' : 'display: none;' }}">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Quote Threshold Quantity</label>
+                                        <input class="form-control" type="number" name="quote_threshold_quantity"
+                                            placeholder="1000" value="{{ old('quote_threshold_quantity') }}" min="1" />
+                                        <small class="text-muted">Min quantity to show "Request Quote" button</small>
                                     </div>
                                 </div>
                             </div>
@@ -601,6 +623,60 @@
                                 </div>
                             </div>
                         </div>
+                    @endif
+
+                    <!-- Food & Catering Specific Fields -->
+                    @if ($type === 'product' && ($categorySlug ?? 'default') === 'food-catering')
+                    <div class="card" id="foodCateringFields">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">
+                                <i class="fas fa-utensils text-warning"></i> Food & Catering Details
+                            </h4>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="isHalal"
+                                            name="is_halal" value="1" {{ old('is_halal') ? 'checked' : '' }}>
+                                        <label class="form-check-label fw-bold" for="isHalal">
+                                            <i class="fas fa-certificate text-success me-2"></i> Halal Certified
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Halal Certificate Number</label>
+                                    <input class="form-control" type="text" name="halal_cert_number"
+                                        placeholder="e.g., JAKIM-12345" value="{{ old('halal_cert_number') }}" />
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Serving Size</label>
+                                    <input class="form-control" type="text" name="serving_size"
+                                        placeholder="e.g., 10 pax" value="{{ old('serving_size') }}" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Preparation Time</label>
+                                    <input class="form-control" type="text" name="preparation_time"
+                                        placeholder="e.g., 2 hours" value="{{ old('preparation_time') }}" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Min Order Notice (days)</label>
+                                    <input class="form-control" type="number" name="min_order_notice_days"
+                                        placeholder="3" value="{{ old('min_order_notice_days') }}" />
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Allergen Information</label>
+                                    <textarea class="form-control" name="allergen_info" rows="2"
+                                        placeholder="List any allergens (nuts, dairy, gluten, etc.)">{{ old('allergen_info') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     @endif
 
                     @if ($type === 'service')
@@ -1183,6 +1259,16 @@
                     const preorderFields = document.querySelector('.preorder-fields');
                     if (preorderFields) {
                         preorderFields.style.display = this.checked ? 'flex' : 'none';
+                    }
+                });
+            }
+
+            const allowQuoteRequestCheckbox = document.getElementById('allowQuoteRequest');
+            if (allowQuoteRequestCheckbox) {
+                allowQuoteRequestCheckbox.addEventListener('change', function() {
+                    const quoteFields = document.querySelector('.quote-request-fields');
+                    if (quoteFields) {
+                        quoteFields.style.display = this.checked ? 'flex' : 'none';
                     }
                 });
             }

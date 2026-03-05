@@ -831,6 +831,13 @@
                             </div>
                             @endif
 
+                            {{-- Bulk / Quote Badges --}}
+                            @if ($product->allow_bulk_order)
+                            <div class="position-absolute start-0" style="top: 22px; padding: 2px 6px; background: #f59e0b; color: #fff; font-size: 9px; font-weight: 600; text-transform: uppercase; z-index: 2;">
+                                <i class="fas fa-boxes"></i> BULK
+                            </div>
+                            @endif
+
                             {{-- Wishlist --}}
                             @php
                             $inWishlist = in_array($product->id, $wishlistProductIds ?? []);

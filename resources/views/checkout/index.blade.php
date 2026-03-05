@@ -375,6 +375,12 @@
                         <h5 class="mb-0">Order Summary</h5>
                     </div>
                     <div class="card-body">
+                        @if ($hasBulkItems ?? false)
+                        <div class="alert alert-warning py-2 mb-3">
+                            <i class="fas fa-boxes me-1"></i> <strong>Bulk Order</strong> — Bulk pricing applied to qualifying items
+                        </div>
+                        @endif
+
                         <!-- Cart Items -->
                         <div class="mb-3">
                             <h6 class="mb-3">Items ({{ $cart->items->count() ?? 0 }})</h6>

@@ -50,7 +50,9 @@ class ProductController extends Controller
         // Get variant types for product variations
         $variantTypes = VariantType::orderBy('sort_order')->get();
 
-        return view('vendor.products.create', compact('store', 'type', 'categories', 'tags', 'variantTypes'));
+        $categorySlug = $store->category?->slug ?? 'default';
+
+        return view('vendor.products.create', compact('store', 'type', 'categories', 'tags', 'variantTypes', 'categorySlug'));
     }
 
     /**
@@ -111,6 +113,8 @@ class ProductController extends Controller
                 'minimum_order_quantity' => 'nullable|integer|min:1',
                 'bulk_price' => 'nullable|numeric|min:0',
                 'bulk_quantity_threshold' => 'nullable|integer|min:1',
+                'allow_quote_request' => 'nullable|boolean',
+                'quote_threshold_quantity' => 'nullable|integer|min:1',
                 'is_preorder' => 'nullable|boolean',
                 'preorder_release_date' => 'nullable|date|after:today',
                 'preorder_limit' => 'nullable|integer|min:1',
@@ -203,6 +207,8 @@ class ProductController extends Controller
                 $product->minimum_order_quantity = $validated['minimum_order_quantity'] ?? 1;
                 $product->bulk_price = $validated['bulk_price'] ?? null;
                 $product->bulk_quantity_threshold = $validated['bulk_quantity_threshold'] ?? null;
+                $product->allow_quote_request = $request->has('allow_quote_request');
+                $product->quote_threshold_quantity = $validated['quote_threshold_quantity'] ?? null;
                 $product->is_preorder = $request->has('is_preorder');
                 $product->preorder_release_date = $validated['preorder_release_date'] ?? null;
                 $product->preorder_limit = $validated['preorder_limit'] ?? null;
@@ -614,7 +620,9 @@ class ProductController extends Controller
         // Get variant types for product variations
         $variantTypes = VariantType::orderBy('sort_order')->get();
 
-        return view('vendor.products.edit', compact('product', 'store', 'type', 'categories', 'tags', 'variantTypes'));
+        $categorySlug = $store->category?->slug ?? 'default';
+
+        return view('vendor.products.edit', compact('product', 'store', 'type', 'categories', 'tags', 'variantTypes', 'categorySlug'));
     }
 
     /**
@@ -672,6 +680,8 @@ class ProductController extends Controller
             $rules['minimum_order_quantity'] = 'nullable|integer|min:1';
             $rules['bulk_price'] = 'nullable|numeric|min:0';
             $rules['bulk_quantity_threshold'] = 'nullable|integer|min:1';
+            $rules['allow_quote_request'] = 'nullable|boolean';
+            $rules['quote_threshold_quantity'] = 'nullable|integer|min:1';
             $rules['is_preorder'] = 'nullable|boolean';
             $rules['preorder_release_date'] = 'nullable|date|after:today';
             $rules['preorder_limit'] = 'nullable|integer|min:1';
@@ -718,6 +728,8 @@ class ProductController extends Controller
                 $product->minimum_order_quantity = $validated['minimum_order_quantity'] ?? 1;
                 $product->bulk_price = $validated['bulk_price'] ?? null;
                 $product->bulk_quantity_threshold = $validated['bulk_quantity_threshold'] ?? null;
+                $product->allow_quote_request = $request->has('allow_quote_request');
+                $product->quote_threshold_quantity = $validated['quote_threshold_quantity'] ?? null;
                 $product->is_preorder = $request->has('is_preorder');
                 $product->preorder_release_date = $validated['preorder_release_date'] ?? null;
                 $product->preorder_limit = $validated['preorder_limit'] ?? null;

@@ -675,6 +675,14 @@
                                                         </li>
                                                         <li class="nav-item">
                                                             <a class="nav-link px-3 d-block"
+                                                                href="{{ route('customer.bulk-quotes.index') }}">
+                                                                <span class="me-2 text-body align-bottom"
+                                                                    data-feather="file-text"></span>
+                                                                My Quotes
+                                                            </a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link px-3 d-block"
                                                                 href="{{ route('customer.wishlist') }}">
                                                                 <span class="me-2 text-body align-bottom"
                                                                     data-feather="heart"></span>

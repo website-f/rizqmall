@@ -156,6 +156,16 @@
                                     </a>
                                 </div>
                                 <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.bulk-quotes.index') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="file-text"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Bulk Quotes</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
                                         href="{{ route('vendor.analytics') }}" role="button" data-bs-toggle=""
                                         aria-expanded="false">
                                         <div class="d-flex align-items-center"><span class="nav-link-icon"><span

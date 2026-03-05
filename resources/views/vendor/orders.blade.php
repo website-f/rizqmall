@@ -159,6 +159,11 @@
                                             <span class="badge bg-{{ $order->status_color ?? 'secondary' }}">
                                                 {{ ucfirst($order->status) }}
                                             </span>
+                                            @if (($order->order_type ?? 'retail') !== 'retail')
+                                            <span class="badge bg-{{ $order->order_type === 'bulk' ? 'warning' : 'info' }} ms-1">
+                                                {{ ucfirst($order->order_type) }}
+                                            </span>
+                                            @endif
                                         </td>
                                         <td>
                                             <div class="dropdown">

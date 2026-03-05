@@ -72,6 +72,7 @@ class AuthController extends Controller
                     'phone' => $userData['phone'] ?? null,
                     'avatar' => $userData['avatar'] ?? null,
                     'user_type' => $resolvedType,
+                    'sandbox_type' => $userData['sandbox_type'] ?? null,
                     'is_admin' => $isAdmin,
                     'auth_type' => 'sso',
                     'is_active' => true,
@@ -126,6 +127,7 @@ class AuthController extends Controller
                 'subscription_user_id' => $userData['id'],
                 'session_id' => $sessionId,
                 'user_type' => $user->user_type,
+                'sandbox_type' => $user->sandbox_type,
                 'stores_quota' => $userData['stores_quota'] ?? 0,
             ]);
 

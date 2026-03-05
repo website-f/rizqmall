@@ -14,6 +14,7 @@ class Order extends Model
         'order_number',
         'user_id',
         'store_id',
+        'order_type',
         'status',
         'payment_status',
         'payment_method',

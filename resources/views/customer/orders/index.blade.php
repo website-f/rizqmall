@@ -72,6 +72,11 @@
                                 <span class="badge bg-{{ $order->status_color ?? 'secondary' }} px-3 py-2">
                                     {{ ucfirst($order->status) }}
                                 </span>
+                                @if (($order->order_type ?? 'retail') !== 'retail')
+                                <span class="badge bg-{{ $order->order_type === 'bulk' ? 'warning' : 'info' }} px-2 py-1 ms-1">
+                                    {{ ucfirst($order->order_type) }}
+                                </span>
+                                @endif
                             </div>
                         </div>
                     </div>

@@ -43,6 +43,9 @@ class Product extends Model
         'preorder_limit',
         'preorder_note',
         'lead_time_days',
+        // Quote request fields
+        'allow_quote_request',
+        'quote_threshold_quantity',
         // Physical attributes
         'weight',
         'length',
@@ -93,6 +96,7 @@ class Product extends Model
         'allow_backorder' => 'boolean',
         'allow_bulk_order' => 'boolean',
         'is_preorder' => 'boolean',
+        'allow_quote_request' => 'boolean',
         'expiry_date' => 'date',
         'preorder_release_date' => 'date',
         'service_days' => 'array',

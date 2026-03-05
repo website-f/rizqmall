@@ -182,6 +182,11 @@
                                         <span class="badge bg-{{ $order->status_color }}">
                                             {{ ucfirst($order->status) }}
                                         </span>
+                                        @if (($order->order_type ?? 'retail') !== 'retail')
+                                        <span class="badge bg-{{ $order->order_type === 'bulk' ? 'warning' : 'info' }} ms-1">
+                                            {{ ucfirst($order->order_type) }}
+                                        </span>
+                                        @endif
                                     </td>
                                     <td>{{ $order->created_at->format('M d, Y') }}</td>
                                 </tr>

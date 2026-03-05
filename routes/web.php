@@ -13,6 +13,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\VendorMemberController;
 use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminProductImportController;
+use App\Http\Controllers\BulkQuoteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -143,6 +144,12 @@ Route::middleware(['auth', 'verify.vendor'])->group(function () {
 
         // Store Purchases
         Route::post('/store-purchase', [\App\Http\Controllers\StorePurchaseController::class, 'purchase'])->name('store-purchase.create');
+
+        // Bulk Quotes (Vendor)
+        Route::get('/bulk-quotes', [BulkQuoteController::class, 'index'])->name('bulk-quotes.index');
+        Route::get('/bulk-quotes/{id}', [BulkQuoteController::class, 'show'])->name('bulk-quotes.show');
+        Route::post('/bulk-quotes/{id}/respond', [BulkQuoteController::class, 'respond'])->name('bulk-quotes.respond');
+        Route::post('/bulk-quotes/{id}/reject', [BulkQuoteController::class, 'reject'])->name('bulk-quotes.reject');
     });
 });
 
@@ -204,7 +211,19 @@ Route::middleware(['auth', 'validate.session'])->group(function () {
         Route::get('/reviews', [CustomerDashboardController::class, 'reviews'])->name('reviews');
         Route::post('/reviews', [CustomerDashboardController::class, 'storeReview'])->name('reviews.store');
         Route::post('/store-reviews', [CustomerDashboardController::class, 'storeStoreReview'])->name('reviews.store_store');
+
+        // Bulk Quotes (Customer)
+        Route::get('/bulk-quotes', [BulkQuoteController::class, 'buyerQuotes'])->name('bulk-quotes.index');
+        Route::post('/bulk-quotes/{id}/accept', [BulkQuoteController::class, 'accept'])->name('bulk-quotes.accept');
+        Route::post('/bulk-quotes/{id}/reject', [BulkQuoteController::class, 'buyerReject'])->name('bulk-quotes.buyer-reject');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk Quote Request (Buyer submits from product page)
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/bulk-quotes/request', [BulkQuoteController::class, 'requestQuote'])->name('bulk-quotes.request');
 
     /*
     |--------------------------------------------------------------------------

@@ -374,9 +374,23 @@
                                     @endif
                                     @if ($item->product->allow_bulk_order || $item->product->is_preorder)
                                         <div class="text-muted small mb-2">
-                                            <i class="fas fa-store me-1"></i>
-                                            @if ($item->product->allow_bulk_order && $item->product->minimum_order_quantity)
-                                                Min qty: {{ $item->product->minimum_order_quantity }}
+                                            @if ($item->product->allow_bulk_order)
+                                                @php
+                                                    $bulkThreshold = $item->product->bulk_quantity_threshold ?? $item->product->minimum_order_quantity ?? 1;
+                                                    $bulkApplied = $item->product->bulk_price && $item->quantity >= $bulkThreshold;
+                                                @endphp
+                                                @if ($bulkApplied)
+                                                    <span class="badge bg-warning text-dark me-1">
+                                                        <i class="fas fa-boxes me-1"></i> Bulk price: RM {{ number_format($item->product->bulk_price, 2) }}/unit
+                                                    </span>
+                                                @elseif ($item->product->bulk_price)
+                                                    <span class="text-info">
+                                                        <i class="fas fa-info-circle me-1"></i> Add {{ $bulkThreshold - $item->quantity }} more for bulk price RM {{ number_format($item->product->bulk_price, 2) }}/unit
+                                                    </span>
+                                                @endif
+                                                @if ($item->product->minimum_order_quantity)
+                                                    <span class="ms-2">Min qty: {{ $item->product->minimum_order_quantity }}</span>
+                                                @endif
                                             @endif
                                             @if ($item->product->is_preorder && $item->product->preorder_release_date)
                                                 <span class="ms-2">Preorder release: {{ \Carbon\Carbon::parse($item->product->preorder_release_date)->format('M d, Y') }}</span>

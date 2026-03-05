@@ -18,6 +18,7 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type',
+        'sandbox_type',
         'is_admin',
         'phone',
         'avatar',

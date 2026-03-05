@@ -491,6 +491,18 @@
                     <i class="fas fa-times-circle"></i> Out of Stock
                 </span>
                 @endif
+
+                @if ($product->allow_bulk_order)
+                <span class="stock-badge" style="background: #fef3c7; color: #92400e;">
+                    <i class="fas fa-boxes"></i> Bulk Order Available
+                </span>
+                @endif
+
+                @if ($product->allow_quote_request)
+                <span class="stock-badge" style="background: #e0e7ff; color: #3730a3;">
+                    <i class="fas fa-file-invoice"></i> Quote Request Available
+                </span>
+                @endif
             </div>
 
             <!-- Attributes Badges -->
@@ -656,6 +668,51 @@
                     <i class="far fa-heart"></i>
                 </button>
             </div>
+
+            <!-- Bulk Order Info -->
+            @if ($product->allow_bulk_order && $product->bulk_price)
+            <div class="mt-3 p-3 rounded" style="background: #fef3c7; border: 1px solid #fbbf24;">
+                <h6 class="fw-bold mb-2"><i class="fas fa-boxes text-warning me-2"></i> Bulk Order Pricing</h6>
+                <p class="mb-1">Bulk Price: <strong class="text-primary">RM {{ number_format($product->bulk_price, 2) }}</strong> per unit</p>
+                @if ($product->bulk_quantity_threshold)
+                <p class="mb-1 small text-muted">Minimum {{ number_format($product->bulk_quantity_threshold) }} units to qualify for bulk pricing</p>
+                @endif
+                @if ($product->lead_time_days)
+                <p class="mb-0 small text-muted">Lead time: {{ $product->lead_time_days }} days for bulk orders</p>
+                @endif
+            </div>
+            @endif
+
+            <!-- Request Quote Section -->
+            @if ($product->allow_quote_request)
+            <div class="mt-3 p-3 rounded" style="background: #e0e7ff; border: 1px solid #818cf8;">
+                <h6 class="fw-bold mb-2"><i class="fas fa-file-invoice text-primary me-2"></i> Request a Quote</h6>
+                <p class="small text-muted mb-3">Need a large quantity? Request a custom quote from the vendor.</p>
+                @auth
+                <form action="{{ route('bulk-quotes.request') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <input type="number" name="requested_quantity" class="form-control form-control-sm"
+                                placeholder="Quantity" min="{{ $product->quote_threshold_quantity ?? 1 }}" required>
+                        </div>
+                        <div class="col-md-8">
+                            <input type="text" name="buyer_notes" class="form-control form-control-sm"
+                                placeholder="Notes (optional)">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i> Submit Quote Request
+                    </button>
+                </form>
+                @else
+                <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-sign-in-alt me-1"></i> Login to Request a Quote
+                </a>
+                @endauth
+            </div>
+            @endif
 
             <!-- Additional Info -->
             <div class="mt-4 pt-4 border-top">

@@ -100,6 +100,14 @@ class CheckoutController extends Controller
             $maxScheduleDate = $minScheduleDate->copy()->addDays(30);
         }
 
+        // Detect bulk items
+        $hasBulkItems = $cart->items->contains(function ($item) {
+            $product = $item->product;
+            if (!$product || !$product->allow_bulk_order) return false;
+            $threshold = $product->bulk_quantity_threshold ?? $product->minimum_order_quantity ?? 1;
+            return $item->quantity >= $threshold && $product->bulk_price;
+        });
+
         // Calculate totals
         $subtotal = $cart->items->sum(function ($item) {
             if (!$item->product) {
@@ -114,13 +122,24 @@ class CheckoutController extends Controller
             }
 
             if ($price === null) {
-                if ($item->product->type === 'service') {
-                    $price = $item->product->booking_fee
-                        ?? $item->product->package_price
-                        ?? $item->product->sale_price
-                        ?? $item->product->regular_price;
+                $product = $item->product;
+                if ($product->type === 'service') {
+                    $price = $product->booking_fee
+                        ?? $product->package_price
+                        ?? $product->sale_price
+                        ?? $product->regular_price;
                 } else {
-                    $price = $item->product->sale_price ?? $item->product->regular_price;
+                    // Apply bulk pricing if eligible
+                    if ($product->allow_bulk_order && $product->bulk_price) {
+                        $threshold = $product->bulk_quantity_threshold ?? $product->minimum_order_quantity ?? 1;
+                        if ($item->quantity >= $threshold) {
+                            $price = $product->bulk_price;
+                        } else {
+                            $price = $product->sale_price ?? $product->regular_price;
+                        }
+                    } else {
+                        $price = $product->sale_price ?? $product->regular_price;
+                    }
                 }
             }
 
@@ -162,6 +181,7 @@ class CheckoutController extends Controller
             'hasServiceItems',
             'hasPhysicalItems',
             'hasMarketplaceItems',
+            'hasBulkItems',
             'requiresSchedule',
             'maxLeadTimeDays',
             'latestPreorderDate',
@@ -174,6 +194,45 @@ class CheckoutController extends Controller
             'walletBalance',
             'walletError'
         ));
+    }
+
+    /**
+     * Determine order type based on items (retail or bulk).
+     */
+    private function determineOrderType($items): string
+    {
+        foreach ($items as $item) {
+            $product = $item->product;
+            if (!$product || !$product->allow_bulk_order) continue;
+            $threshold = $product->bulk_quantity_threshold ?? $product->minimum_order_quantity ?? 1;
+            if ($item->quantity >= $threshold) {
+                return 'bulk';
+            }
+        }
+        return 'retail';
+    }
+
+    /**
+     * Get the effective price for a cart item (applying bulk pricing if eligible).
+     */
+    private function getItemPrice($item): float
+    {
+        $price = $item->price;
+        if ($price === null && $item->variant) {
+            $price = $item->variant->sale_price ?? $item->variant->price ?? null;
+        }
+        if ($price === null) {
+            $product = $item->product;
+            if ($product->type === 'service') {
+                $price = $product->booking_fee ?? $product->package_price ?? $product->sale_price ?? $product->regular_price;
+            } elseif ($product->allow_bulk_order && $product->bulk_price) {
+                $threshold = $product->bulk_quantity_threshold ?? $product->minimum_order_quantity ?? 1;
+                $price = ($item->quantity >= $threshold) ? $product->bulk_price : ($product->sale_price ?? $product->regular_price);
+            } else {
+                $price = $product->sale_price ?? $product->regular_price;
+            }
+        }
+        return floatval($price ?? 0);
     }
 
     public function process(Request $request)
@@ -295,8 +354,7 @@ class CheckoutController extends Controller
                     $storeDeliveryType = $storeHasPhysicalItems ? $deliveryType : 'pickup';
 
                     $storeSubtotal = $items->sum(function ($item) {
-                        $price = $item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0;
-                        return floatval($price) * intval($item->quantity);
+                        return $this->getItemPrice($item) * intval($item->quantity);
                     });
 
                     $storeSubtotal = floatval($storeSubtotal) ?: 0;
@@ -307,6 +365,7 @@ class CheckoutController extends Controller
                         'order_number' => Order::generateOrderNumber(),
                         'user_id' => $user->id,
                         'store_id' => $storeId,
+                        'order_type' => $this->determineOrderType($items),
                         'status' => 'confirmed',
                         'payment_status' => 'paid',
                         'payment_method' => 'ewallet',
@@ -324,7 +383,7 @@ class CheckoutController extends Controller
                     ]);
 
                     foreach ($items as $item) {
-                        $itemPrice = floatval($item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0);
+                        $itemPrice = $this->getItemPrice($item);
                         $quantity = intval($item->quantity);
                         $itemSubtotal = round($itemPrice * $quantity, 2);
                         $itemTax = round($itemSubtotal * $taxRate, 2);
@@ -426,9 +485,7 @@ class CheckoutController extends Controller
             $storeDeliveryType = $storeHasPhysicalItems ? $deliveryType : 'pickup';
 
             $storeSubtotal = $items->sum(function ($item) {
-                // Get price with fallbacks
-                $price = $item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0;
-                return floatval($price) * intval($item->quantity);
+                return $this->getItemPrice($item) * intval($item->quantity);
             });
 
             // Ensure subtotal is a valid number
@@ -440,9 +497,10 @@ class CheckoutController extends Controller
                 'order_number' => Order::generateOrderNumber(),
                 'user_id' => $user->id,
                 'store_id' => $storeId,
+                'order_type' => $this->determineOrderType($items),
                 'status' => 'pending',
                 'payment_status' => 'pending',
-                'payment_method' => 'toyyibpay', // Now using VARCHAR after migration
+                'payment_method' => 'toyyibpay',
                 'subtotal' => $storeSubtotal,
                 'tax' => $tax,
                 'delivery_fee' => $storeDeliveryFee,
@@ -456,8 +514,7 @@ class CheckoutController extends Controller
             ]);
 
             foreach ($items as $item) {
-                // Get the actual price from cart item or product
-                $itemPrice = floatval($item->price ?? $item->variant->price ?? $item->product->sale_price ?? $item->product->regular_price ?? 0);
+                $itemPrice = $this->getItemPrice($item);
                 $quantity = intval($item->quantity);
                 $itemSubtotal = round($itemPrice * $quantity, 2);
                 $itemTax = round($itemSubtotal * $taxRate, 2);
