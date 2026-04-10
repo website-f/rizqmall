@@ -19,7 +19,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Marketplace',
                 'slug' => 'marketplace',
-                'icon' => 'fas fa-store',
+                'icon' => 'fas fa-boxes-stacked',
                 'description' => 'Bulk orders and preorder products for events, businesses, and organizations',
                 'is_active' => true,
                 'sort_order' => 1,
@@ -27,7 +27,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Services',
                 'slug' => 'services',
-                'icon' => 'fas fa-concierge-bell',
+                'icon' => 'fas fa-briefcase',
                 'description' => 'Professional services and expertise',
                 'is_active' => true,
                 'sort_order' => 2,
@@ -35,7 +35,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Pharmacy',
                 'slug' => 'pharmacy',
-                'icon' => 'fas fa-pills',
+                'icon' => 'fas fa-prescription-bottle-medical',
                 'description' => 'Pharmaceutical products and health medications',
                 'is_active' => true,
                 'sort_order' => 3,
@@ -59,7 +59,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Contractors',
                 'slug' => 'contractors',
-                'icon' => 'fas fa-hard-hat',
+                'icon' => 'fas fa-helmet-safety',
                 'description' => 'Construction and renovation services',
                 'is_active' => false,
                 'sort_order' => 6,
@@ -75,7 +75,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Hardware',
                 'slug' => 'hardware',
-                'icon' => 'fas fa-tools',
+                'icon' => 'fas fa-screwdriver-wrench',
                 'description' => 'Tools, equipment, and hardware supplies',
                 'is_active' => true,
                 'sort_order' => 8,
@@ -83,7 +83,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Delivery',
                 'slug' => 'delivery',
-                'icon' => 'fas fa-shipping-fast',
+                'icon' => 'fas fa-truck-fast',
                 'description' => 'Courier and delivery services',
                 'is_active' => true,
                 'sort_order' => 9,
@@ -91,7 +91,7 @@ class CategorySeeder extends Seeder
             [
                 'name' => 'Mobility',
                 'slug' => 'mobility',
-                'icon' => 'fas fa-car',
+                'icon' => 'fas fa-car-side',
                 'description' => 'Transportation, taxi, and vehicle rental services',
                 'is_active' => true,
                 'sort_order' => 10,

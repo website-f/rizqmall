@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\BulkQuote;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\VendorMember;
@@ -43,6 +44,10 @@ class VendorDashboardController extends Controller
                 ->active()
                 ->whereMonth('joined_at', now()->month)
                 ->count(),
+            'pending_quotes' => BulkQuote::where('store_id', $store->id)
+                ->where('status', BulkQuote::STATUS_PENDING)
+                ->count(),
+            'total_quotes' => BulkQuote::where('store_id', $store->id)->count(),
         ];
 
         // Recent orders

@@ -175,6 +175,26 @@
                                         </div>
                                     </a>
                                 </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.members.index') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="users"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Members</span></span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nav-item-wrapper"><a class="nav-link label-1"
+                                        href="{{ route('vendor.settings') }}" role="button" data-bs-toggle=""
+                                        aria-expanded="false">
+                                        <div class="d-flex align-items-center"><span class="nav-link-icon"><span
+                                                    data-feather="settings"></span></span><span
+                                                class="nav-link-text-wrapper"><span
+                                                    class="nav-link-text">Settings</span></span>
+                                        </div>
+                                    </a>
+                                </div>
                             @endif
                             <!-- parent pages-->
                             {{-- <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-faq" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-faq">

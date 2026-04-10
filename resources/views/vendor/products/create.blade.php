@@ -400,55 +400,130 @@
 
                     <!-- Marketplace Options (Bulk & Preorder) - Only for marketplace category -->
                     @if ($type === 'product' && ($categorySlug ?? 'default') === 'marketplace')
+                    <!-- Bulk Order Tutorial -->
+                    <div class="card" id="bulkOrderGuide" style="border: 2px solid #dbeafe; border-radius: 16px; background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0 fw-bold" style="color: #1e40af;">How Bulk Orders Work</h5>
+                                        <small class="text-muted">Quick guide to set up bulk products for your marketplace</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-size: 0.75rem;" onclick="document.getElementById('tutorialSteps').style.display = document.getElementById('tutorialSteps').style.display === 'none' ? 'block' : 'none'; this.innerHTML = document.getElementById('tutorialSteps').style.display === 'none' ? '<i class=\'fas fa-chevron-down me-1\'></i> Show Guide' : '<i class=\'fas fa-chevron-up me-1\'></i> Hide Guide';">
+                                    <i class="fas fa-chevron-down me-1"></i> Show Guide
+                                </button>
+                            </div>
+
+                            <div id="tutorialSteps" style="display: none;">
+                                <!-- Step-by-step Guide -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px;">
+                                    <!-- Step 1 -->
+                                    <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e0e7ff;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; margin-bottom: 10px;">1</div>
+                                        <h6 style="font-weight: 700; color: #1e3a5f; margin-bottom: 6px;">Enable Bulk Orders</h6>
+                                        <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.5;">Check "Enable Bulk Orders" below to allow customers to buy in large quantities.</p>
+                                    </div>
+
+                                    <!-- Step 2 -->
+                                    <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e0e7ff;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; margin-bottom: 10px;">2</div>
+                                        <h6 style="font-weight: 700; color: #1e3a5f; margin-bottom: 6px;">Set Pricing & Quantity</h6>
+                                        <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.5;">Set a <strong>bulk price</strong> (discounted) and the <strong>minimum quantity</strong> a buyer must order.</p>
+                                    </div>
+
+                                    <!-- Step 3 -->
+                                    <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e0e7ff;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #8b5cf6; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; margin-bottom: 10px;">3</div>
+                                        <h6 style="font-weight: 700; color: #1e3a5f; margin-bottom: 6px;">Allow Quote Requests</h6>
+                                        <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.5;">Enable quotes so buyers can <strong>request custom pricing</strong> for very large orders.</p>
+                                    </div>
+
+                                    <!-- Step 4 -->
+                                    <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e0e7ff;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #ec4899; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; margin-bottom: 10px;">4</div>
+                                        <h6 style="font-weight: 700; color: #1e3a5f; margin-bottom: 6px;">Manage from Dashboard</h6>
+                                        <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.5;">Go to <strong>Bulk Quotes</strong> in your dashboard to respond to buyer requests and close deals!</p>
+                                    </div>
+                                </div>
+
+                                <!-- How it looks for buyers -->
+                                <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e0e7ff; margin-top: 16px;">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-eye" style="color: #6366f1;"></i>
+                                        <h6 style="font-weight: 700; color: #1e3a5f; margin: 0;">What buyers see</h6>
+                                    </div>
+                                    <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: #64748b;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.7rem;"><i class="fas fa-boxes-stacked me-1"></i> BULK</span>
+                                            Badge on product card
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fas fa-tag text-success"></i>
+                                            Bulk price with threshold info
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fas fa-file-invoice text-info"></i>
+                                            "Request Quote" form for large orders
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-body">
                             <h4 class="card-title mb-4">
-                                <i class="fas fa-store text-primary"></i> Marketplace Options
+                                <i class="fas fa-boxes-stacked text-primary"></i> Marketplace Options
                                 <span class="badge bg-info ms-2">Optional</span>
                             </h4>
                             <p class="text-muted small mb-4">Enable bulk ordering or preorder features for events, businesses, and organizations.</p>
 
                             <!-- Bulk Order Section -->
-                            <div class="border rounded p-3 mb-4">
+                            <div class="border rounded-3 p-3 mb-4" style="border-color: #e5e7eb !important;">
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="allowBulkOrder"
                                         name="allow_bulk_order" value="1" {{ old('allow_bulk_order') ? 'checked' : '' }}>
                                     <label class="form-check-label fw-bold" for="allowBulkOrder">
-                                        <i class="fas fa-boxes text-warning me-2"></i> Enable Bulk Orders
+                                        <i class="fas fa-boxes-stacked text-warning me-2"></i> Enable Bulk Orders
                                     </label>
                                     <div class="form-text">Allow customers to order in large quantities with special pricing</div>
                                 </div>
 
                                 <div class="row g-3 bulk-order-fields" style="{{ old('allow_bulk_order') ? '' : 'display: none;' }}">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Minimum Order Quantity <span class="text-danger">*</span></label>
+                                    <div class="col-md-4 col-6">
+                                        <label class="form-label">Minimum Order Qty <span class="text-danger">*</span></label>
                                         <input class="form-control" type="number" name="minimum_order_quantity"
                                             placeholder="10" value="{{ old('minimum_order_quantity', 1) }}" min="1" />
-                                        <small class="text-muted">Minimum quantity per order</small>
+                                        <small class="text-muted">Min quantity per order</small>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 col-6">
                                         <label class="form-label">Bulk Price (RM)</label>
                                         <input class="form-control" type="number" step="0.01" name="bulk_price"
                                             placeholder="69.00" value="{{ old('bulk_price') }}" />
-                                        <small class="text-muted">Special price for bulk orders</small>
+                                        <small class="text-muted">Special bulk price</small>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Bulk Quantity Threshold</label>
+                                    <div class="col-md-4 col-6">
+                                        <label class="form-label">Bulk Qty Threshold</label>
                                         <input class="form-control" type="number" name="bulk_quantity_threshold"
                                             placeholder="50" value="{{ old('bulk_quantity_threshold') }}" />
-                                        <small class="text-muted">Min qty to get bulk price</small>
+                                        <small class="text-muted">Min qty for bulk price</small>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 col-6">
                                         <label class="form-label">Lead Time (Days)</label>
                                         <input class="form-control" type="number" name="lead_time_days"
                                             placeholder="7" value="{{ old('lead_time_days') }}" />
-                                        <small class="text-muted">Days needed to prepare bulk orders</small>
+                                        <small class="text-muted">Preparation days</small>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Quote Request Section -->
-                            <div class="border rounded p-3 mb-4">
+                            <div class="border rounded-3 p-3 mb-4" style="border-color: #e5e7eb !important;">
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="allowQuoteRequest"
                                         name="allow_quote_request" value="1" {{ old('allow_quote_request') ? 'checked' : '' }}>
@@ -469,7 +544,7 @@
                             </div>
 
                             <!-- Preorder Section -->
-                            <div class="border rounded p-3">
+                            <div class="border rounded-3 p-3" style="border-color: #e5e7eb !important;">
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="isPreorder"
                                         name="is_preorder" value="1" {{ old('is_preorder') ? 'checked' : '' }}>
@@ -480,23 +555,23 @@
                                 </div>
 
                                 <div class="row g-3 preorder-fields" style="{{ old('is_preorder') ? '' : 'display: none;' }}">
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 col-6">
                                         <label class="form-label">Release Date</label>
                                         <input class="form-control" type="date" name="preorder_release_date"
                                             value="{{ old('preorder_release_date') }}" min="{{ date('Y-m-d', strtotime('+1 day')) }}" />
-                                        <small class="text-muted">When product will be available</small>
+                                        <small class="text-muted">Availability date</small>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 col-6">
                                         <label class="form-label">Preorder Limit</label>
                                         <input class="form-control" type="number" name="preorder_limit"
                                             placeholder="100" value="{{ old('preorder_limit') }}" />
-                                        <small class="text-muted">Max preorder units (optional)</small>
+                                        <small class="text-muted">Max units (optional)</small>
                                     </div>
-                                    <div class="col-md-12">
+                                    <div class="col-12">
                                         <label class="form-label">Preorder Note</label>
                                         <textarea class="form-control" name="preorder_note" rows="2"
                                             placeholder="e.g., Expected delivery in 2-3 weeks after release date">{{ old('preorder_note') }}</textarea>
-                                        <small class="text-muted">Information shown to customers about preorder</small>
+                                        <small class="text-muted">Info shown to customers</small>
                                     </div>
                                 </div>
                             </div>
