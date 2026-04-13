@@ -38,10 +38,12 @@ class StoreController extends Controller
             abort(403, 'Only vendor accounts can create stores.');
         }
 
+        $sandboxType = $user->sandbox_type ?? session('sandbox_type');
+
         // Only Sandbox Usahawan can create vendor stores
-        if ($user->sandbox_type && $user->sandbox_type !== 'usahawan') {
+        if ($sandboxType && $sandboxType !== 'usahawan') {
             return redirect()->route('rizqmall.home')
-                ->with('error', 'Only Sandbox Usahawan users can create vendor stores. Your account type is Sandbox ' . ucfirst($user->sandbox_type) . '.');
+                ->with('error', 'Only Sandbox Usahawan users can create vendor stores. Your account type is Sandbox ' . ucfirst($sandboxType) . '.');
         }
 
         // Check store quota
@@ -121,8 +123,10 @@ class StoreController extends Controller
                 ->with('error', 'Authentication required.');
         }
 
+        $sandboxType = $user->sandbox_type ?? session('sandbox_type');
+
         // Only Sandbox Usahawan can create vendor stores
-        if ($user->sandbox_type && $user->sandbox_type !== 'usahawan') {
+        if ($sandboxType && $sandboxType !== 'usahawan') {
             return redirect()->route('rizqmall.home')
                 ->with('error', 'Only Sandbox Usahawan users can create vendor stores.');
         }

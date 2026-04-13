@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -50,38 +51,63 @@ class AuthController extends Controller
             }
 
             // Step 2: Create or update local user
+            // Prefer the linked Sandbox record, but fall back to email so existing
+            // customer accounts are upgraded instead of causing duplicate-email failures.
             $existingUser = User::where('subscription_user_id', $userData['id'])->first();
-            $isAdmin = (bool) ($userData['is_admin'] ?? false);
-            $incomingType = $userData['user_type'] ?? 'customer';
-            $resolvedType = $incomingType;
-
-            // If admin logs in but already has vendor access, keep vendor type
-            if ($isAdmin && $incomingType === 'admin' && $existingUser) {
-                if ($existingUser->user_type === 'vendor') {
-                    $resolvedType = 'vendor';
-                } elseif (Store::where('user_id', $existingUser->id)->exists()) {
-                    $resolvedType = 'vendor';
-                }
+            if (!$existingUser && !empty($userData['email'])) {
+                $existingUser = User::where('email', $userData['email'])->first();
             }
 
-            $user = User::updateOrCreate(
-                ['subscription_user_id' => $userData['id']],
-                [
-                    'name' => $userData['name'],
-                    'email' => $userData['email'],
-                    'phone' => $userData['phone'] ?? null,
-                    'avatar' => $userData['avatar'] ?? null,
-                    'user_type' => $resolvedType,
-                    'sandbox_type' => $userData['sandbox_type'] ?? null,
-                    'is_admin' => $isAdmin,
-                    'auth_type' => 'sso',
-                    'is_active' => true,
-                    'email_verified' => true,
-                    'subscription_status' => $userData['subscription_status'],
-                    'subscription_expires_at' => $userData['subscription_expires_at'] ? \Carbon\Carbon::parse($userData['subscription_expires_at']) : null,
-                    'last_sync_at' => now(),
-                ]
-            );
+            $isAdmin = Schema::hasColumn('users', 'is_admin')
+                ? (bool) ($userData['is_admin'] ?? false)
+                : false;
+            $incomingType = $userData['user_type'] ?? 'customer';
+            $resolvedType = $this->resolveSsoUserType($existingUser, $userData);
+
+            $userAttributes = [
+                'subscription_user_id' => $userData['id'],
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'phone' => $userData['phone'] ?? null,
+                'avatar' => $userData['avatar'] ?? null,
+                'user_type' => $resolvedType,
+                'auth_type' => 'sso',
+                'is_active' => true,
+                'email_verified' => true,
+                'subscription_status' => $userData['subscription_status'] ?? 'none',
+                'subscription_expires_at' => !empty($userData['subscription_expires_at'])
+                    ? \Carbon\Carbon::parse($userData['subscription_expires_at'])
+                    : null,
+            ];
+
+            if (Schema::hasColumn('users', 'sandbox_type')) {
+                $userAttributes['sandbox_type'] = $userData['sandbox_type'] ?? $existingUser?->sandbox_type;
+            }
+
+            if (Schema::hasColumn('users', 'is_admin')) {
+                $userAttributes['is_admin'] = $isAdmin;
+            }
+
+            if (Schema::hasColumn('users', 'last_sync_at')) {
+                $userAttributes['last_sync_at'] = now();
+            }
+
+            if ($existingUser) {
+                $existingUser->fill($userAttributes);
+                $existingUser->save();
+                $user = $existingUser->fresh();
+            } else {
+                $user = User::create($userAttributes);
+            }
+
+            Log::info('Resolved SSO user type', [
+                'subscription_user_id' => $userData['id'],
+                'email' => $userData['email'] ?? null,
+                'incoming_type' => $incomingType,
+                'resolved_type' => $resolvedType,
+                'existing_user_id' => $existingUser?->id,
+                'existing_user_type' => $existingUser?->user_type,
+            ]);
 
             // Step 3: Log subscription status (but don't block login)
             // Allow vendors to login even without active subscription
@@ -148,6 +174,30 @@ class AuthController extends Controller
             return redirect()->route('rizqmall.home')
                 ->with('error', 'An error occurred during authentication. Please try again.');
         }
+    }
+
+    /**
+     * Resolve the correct RizqMall user type for SSO logins.
+     * Vendors should keep vendor access even if an older customer profile exists.
+     */
+    private function resolveSsoUserType(?User $existingUser, array $userData): string
+    {
+        $incomingType = $userData['user_type'] ?? 'customer';
+        $isAdmin = (bool) ($userData['is_admin'] ?? false);
+
+        $existingIsVendor = $existingUser?->user_type === 'vendor';
+        $existingHasStore = $existingUser?->stores()->exists() ?? false;
+        $hasActiveVendorSubscription = ($userData['subscription_status'] ?? null) === 'active';
+
+        if ($isAdmin && $incomingType === 'admin') {
+            return ($existingIsVendor || $existingHasStore) ? 'vendor' : 'admin';
+        }
+
+        if ($incomingType === 'vendor' || $hasActiveVendorSubscription || $existingIsVendor || $existingHasStore) {
+            return 'vendor';
+        }
+
+        return 'customer';
     }
 
     /**
